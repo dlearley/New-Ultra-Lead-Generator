@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+pnpm-lock.yaml
+.pnpm-lock.yaml
+
+# Build outputs
+dist
+build
+.next
+.turbo
+out
+
+# Runtime data
+*.log
+*.pid
+*.seed
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Cache
+.eslintcache
+.prettier-ignore-cache
+.turbo
+
+# Temporary
+tmp
+temp
