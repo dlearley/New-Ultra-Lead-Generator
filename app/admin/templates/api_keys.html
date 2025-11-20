@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}API Keys - Webhook Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>API Key Management</h2>
+    <p>Create and manage API keys for your organization. Each key can have different roles and rate limits.</p>
+</div>
+
+<div class="card">
+    <h3>Create New API Key</h3>
+    <form id="createKeyForm">
+        <div class="form-group">
+            <label for="name">Key Name</label>
+            <input type="text" id="name" name="name" required placeholder="e.g., Production API Key">
+        </div>
+        
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select id="role" name="role">
+                <option value="read_only">Read Only</option>
+                <option value="read_write" selected>Read Write</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="rate_limit">Rate Limit (requests/hour)</label>
+            <input type="number" id="rate_limit" name="rate_limit" value="1000" min="1" max="10000">
+        </div>
+        
+        <button type="submit" class="btn">Create API Key</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Your API Keys</h3>
+    <div id="apiKeysList">
+        <p>Loading...</p>
+    </div>
+</div>
+
+<div id="newKeyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3>API Key Created Successfully!</h3>
+        <p style="color: #e74c3c; margin: 15px 0;"><strong>⚠️ Save this key now. You won't be able to see it again!</strong></p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; word-break: break-all; font-family: monospace; margin: 15px 0;">
+            <span id="newKeyValue"></span>
+        </div>
+        <button onclick="copyKey()" class="btn" style="margin-right: 10px;">Copy Key</button>
+        <button onclick="closeModal()" class="btn btn-danger">Close</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const API_BASE = '/api/v1';
+    let authToken = localStorage.getItem('apiKey') || 'Bearer demo-key';
+    
+    async function loadApiKeys() {
+        try {
+            const response = await fetch(`${API_BASE}/keys`, {
+                headers: {
+                    'Authorization': authToken
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to load API keys');
+            
+            const keys = await response.json();
+            displayApiKeys(keys);
+        } catch (error) {
+            document.getElementById('apiKeysList').innerHTML = `<p style="color: #e74c3c;">Error loading API keys. Make sure you're authenticated.</p>`;
+        }
+    }
+    
+    function displayApiKeys(keys) {
+        if (keys.length === 0) {
+            document.getElementById('apiKeysList').innerHTML = '<p>No API keys found. Create one above.</p>';
+            return;
+        }
+        
+        const table = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Prefix</th>
+                        <th>Role</th>
+                        <th>Rate Limit</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${keys.map(key => `
+                        <tr>
+                            <td>${key.name}</td>
+                            <td><code>${key.key_prefix}</code></td>
+                            <td><span class="badge badge-info">${key.role}</span></td>
+                            <td>${key.rate_limit}/hour</td>
+                            <td>
+                                ${key.is_active && !key.revoked_at 
+                                    ? '<span class="badge badge-success">Active</span>' 
+                                    : '<span class="badge badge-danger">Revoked</span>'}
+                            </td>
+                            <td>${new Date(key.created_at).toLocaleDateString()}</td>
+                            <td>
+                                ${key.is_active && !key.revoked_at
+                                    ? `<button onclick="revokeKey('${key.id}')" class="btn btn-danger">Revoke</button>`
+                                    : '-'}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        
+        document.getElementById('apiKeysList').innerHTML = table;
+    }
+    
+    document.getElementById('createKeyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = {
+            name: formData.get('name'),
+            role: formData.get('role'),
+            rate_limit: parseInt(formData.get('rate_limit'))
+        };
+        
+        try {
+            const response = await fetch(`${API_BASE}/keys`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authToken
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) throw new Error('Failed to create API key');
+            
+            const result = await response.json();
+            document.getElementById('newKeyValue').textContent = result.key;
+            document.getElementById('newKeyModal').style.display = 'block';
+            
+            e.target.reset();
+            await loadApiKeys();
+        } catch (error) {
+            alert('Error creating API key: ' + error.message);
+        }
+    });
+    
+    async function revokeKey(keyId) {
+        if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/keys/${keyId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': authToken
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to revoke API key');
+            
+            await loadApiKeys();
+        } catch (error) {
+            alert('Error revoking API key: ' + error.message);
+        }
+    }
+    
+    function copyKey() {
+        const keyValue = document.getElementById('newKeyValue').textContent;
+        navigator.clipboard.writeText(keyValue);
+        alert('API key copied to clipboard!');
+    }
+    
+    function closeModal() {
+        document.getElementById('newKeyModal').style.display = 'none';
+    }
+    
+    loadApiKeys();
+</script>
+{% endblock %}
