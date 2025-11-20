@@ -1,0 +1,18 @@
+{
+  "name": "developer-infra",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@8.10.0",
+  "scripts": {
+    "docker:up": "docker compose up -d --build --remove-orphans",
+    "docker:down": "docker compose down --remove-orphans -v",
+    "docker:logs": "docker compose logs -f --tail=200",
+    "docker:logs:postgres": "docker compose logs -f postgres",
+    "docker:logs:redis": "docker compose logs -f redis",
+    "docker:logs:opensearch": "docker compose logs -f opensearch",
+    "docker:logs:minio": "docker compose logs -f minio",
+    "docker:logs:bullmq": "docker compose logs -f bullmq-dashboard",
+    "db:migrate:phase2": "bash ./scripts/migrations/phase-2/apply.sh",
+    "connectors:phase3": "bash ./connectors/phase-3/run.sh"
+  }
+}
