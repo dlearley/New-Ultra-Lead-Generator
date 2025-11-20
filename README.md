@@ -33,11 +33,15 @@ The stack attaches every service to the named `app-infra` bridge network and per
    ```bash
    pnpm db:migrate:phase2
    ```
-5. Start the Phase 3 connectors shim (keeps external credentials loaded and ready for your real connector processes):
+5. Seed the database with demo data:
+   ```bash
+   pnpm seed
+   ```
+6. (Optional) Start the Phase 3 connectors shim (keeps external credentials loaded and ready for your real connector processes):
    ```bash
    pnpm connectors:phase3
    ```
-6. Point your web/admin/api apps at the stack using the `.env` files you created in step 1. The defaults assume the following URLs:
+7. Point your web/admin/api apps at the stack using the `.env` files you created in step 1. The defaults assume the following URLs:
    - Web: `http://localhost:3000`
    - Admin: `http://localhost:3100`
    - API: `http://localhost:4000`
@@ -66,6 +70,27 @@ The `connectors/phase-3` directory contains a lightweight runner that validates 
 
 Environment variables required by this runner are already listed inside `.env.example` and the per-app files. Set them before starting the script.
 
+## Demo Data Seeding
+
+The repository includes comprehensive seed scripts to populate your database with realistic demo data across all entities:
+
+```bash
+# Seed database with demo data (idempotent)
+pnpm seed
+
+# Reset and reseed (clean slate)
+pnpm seed:reset
+```
+
+The seed data includes:
+- **10 diverse industries**: Dental, HVAC, Trucking, Plumbing, Roofing, Landscaping, Real Estate, Legal, Medical, Automotive
+- **35+ US cities** across all regions (Northeast, Southeast, Midwest, Southwest, West)
+- **pgvector embeddings**: 1536-dimension vectors for similarity search
+- **OpenSearch indexing**: Full-text and geo-spatial search
+- **Complete relationships**: Organizations, users, businesses, contacts, social profiles, lead lists, saved searches, alerts, and ICP configs
+
+See [docs/SEEDING.md](docs/SEEDING.md) for complete documentation, configuration options, and dataset details.
+
 ## Helpful commands
 
 | Command | Description |
@@ -75,6 +100,8 @@ Environment variables required by this runner are already listed inside `.env.ex
 | `pnpm docker:logs` | Tail combined logs for the stack |
 | `pnpm docker:logs:<service>` | Tail logs for a single service (postgres, redis, opensearch, minio) |
 | `pnpm db:migrate:phase2` | Apply SQL migrations from `scripts/migrations/phase-2` |
+| `pnpm seed` | Seed database with comprehensive demo data |
+| `pnpm seed:reset` | Reset database and reseed with fresh data |
 | `pnpm connectors:phase3` | Boot the Phase 3 connector runner |
 
 After the stack is running and migrations/connectors are loaded, your apps can use their `.env` files to connect to:
