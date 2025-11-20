@@ -1,4 +1,4 @@
-import type { AIProvider, AIMessage, AIGenerationOptions, AIGenerationResponse, AIRegistryConfig } from '../types/index.js';
+import type { AIProvider, AIMessage, AIGenerationOptions, AIGenerationResponse, AIRegistryConfig, AIEmbeddingResponse } from '../types/index.js';
 import { AIError } from '../types/index.js';
 import { createProvider } from '../providers/index.js';
 import { RateLimiter } from '../ratelimit/index.js';
@@ -149,6 +149,64 @@ export class AIRegistry {
         content: 'stream',
         finishReason: 'stop',
       });
+    } catch (error) {
+      const normalized = this.errorNormalizer.normalize(
+        error,
+        selectedProvider.name
+      );
+      this.tracingManager.onRequestError(tracingContext, normalized.normalizedError);
+
+      throw normalized.normalizedError;
+    }
+  }
+
+  async embedText(
+    text: string,
+    provider?: string,
+    options?: AIGenerationOptions
+  ): Promise<AIEmbeddingResponse> {
+    const selectedProvider = this.getProvider(provider);
+    
+    if (!selectedProvider.embedText) {
+      throw new AIError(
+        {
+          provider: selectedProvider.name,
+          message: `Provider '${selectedProvider.name}' does not support embeddings`,
+          retryable: false,
+        },
+        `Provider '${selectedProvider.name}' does not support embeddings`
+      );
+    }
+
+    const tracingContext = this.tracingManager.createContext(
+      selectedProvider.name,
+      'embedText'
+    );
+
+    try {
+      this.tracingManager.onRequestStart(tracingContext);
+
+      const guardResult = this.guardrails.validateContent(text);
+      if (!guardResult.valid) {
+        throw new AIError(
+          {
+            provider: selectedProvider.name,
+            message: guardResult.errors.join('; '),
+            retryable: false,
+          },
+          `Guardrail validation failed: ${guardResult.errors.join('; ')}`
+        );
+      }
+
+      await this.rateLimiter.acquire();
+
+      const response = await selectedProvider.embedText(text, options);
+      this.tracingManager.onRequestEnd(tracingContext, {
+        content: `embedding[${response.dimension}]`,
+        finishReason: 'stop',
+      });
+
+      return response;
     } catch (error) {
       const normalized = this.errorNormalizer.normalize(
         error,

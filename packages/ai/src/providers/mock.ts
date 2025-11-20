@@ -1,4 +1,4 @@
-import type { AIMessage, AIGenerationResponse } from '../types/index.js';
+import type { AIMessage, AIGenerationResponse, AIEmbeddingResponse } from '../types/index.js';
 import { BaseProvider } from './base.js';
 
 export interface MockProviderOptions {
@@ -62,6 +62,49 @@ export class MockProvider extends BaseProvider {
       yield char;
       await this.sleep(10);
     }
+  }
+
+  async embedText(text: string): Promise<AIEmbeddingResponse> {
+    await this.simulateDelay();
+
+    if (this.options.shouldFail) {
+      throw new Error(this.options.failureMessage || 'Mock provider embedding failed');
+    }
+
+    // Generate deterministic embedding based on text hash
+    const embedding = this.generateMockEmbedding(text);
+
+    return {
+      embedding,
+      dimension: 1536,
+      model: 'mock-embedding-3-small',
+      usage: {
+        promptTokens: Math.ceil(text.length / 4),
+      },
+    };
+  }
+
+  private generateMockEmbedding(text: string): number[] {
+    // Generate deterministic embedding using simple hash
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+
+    // Seed random generator with hash
+    const seeded = Math.sin(hash) * 10000;
+    const seed = seeded - Math.floor(seeded);
+
+    const embedding: number[] = [];
+    for (let i = 0; i < 1536; i++) {
+      // Deterministic pseudo-random using seeded value
+      const x = Math.sin(seed * (i + 1)) * 10000;
+      embedding.push(x - Math.floor(x));
+    }
+
+    return embedding;
   }
 
   private generateMockResponse(messages: AIMessage[]): string {

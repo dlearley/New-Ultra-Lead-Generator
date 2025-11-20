@@ -22,6 +22,15 @@ export interface AIGenerationResponse {
   };
 }
 
+export interface AIEmbeddingResponse {
+  embedding: number[];
+  dimension: number;
+  model: string;
+  usage?: {
+    promptTokens: number;
+  };
+}
+
 export interface AIStreamResponse {
   [Symbol.asyncIterator](): AsyncIterator<string>;
 }
@@ -39,6 +48,8 @@ export interface AIProvider {
     messages: AIMessage[],
     options?: AIGenerationOptions
   ): AsyncIterable<string>;
+
+  embedText?(text: string, options?: AIGenerationOptions): Promise<AIEmbeddingResponse>;
   
   validateSchema(data: unknown, schema: Record<string, unknown>): boolean;
   
