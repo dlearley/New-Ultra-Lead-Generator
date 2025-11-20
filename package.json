@@ -17,7 +17,19 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "turbo run clean && pnpm -r clean",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "docker:up": "docker compose up -d --build --remove-orphans",
+    "docker:down": "docker compose down --remove-orphans -v",
+    "docker:logs": "docker compose logs -f --tail=200",
+    "docker:logs:postgres": "docker compose logs -f postgres",
+    "docker:logs:redis": "docker compose logs -f redis",
+    "docker:logs:opensearch": "docker compose logs -f opensearch",
+    "docker:logs:minio": "docker compose logs -f minio",
+    "docker:logs:bullmq": "docker compose logs -f bullmq-dashboard",
+    "db:migrate:phase2": "bash ./scripts/migrations/phase-2/apply.sh",
+    "connectors:phase3": "bash ./connectors/phase-3/run.sh",
+    "seed": "tsx scripts/seed/index.ts",
+    "seed:reset": "tsx scripts/seed/reset.ts && tsx scripts/seed/index.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
@@ -31,7 +43,9 @@
     "husky": "^9.0.11",
     "prettier": "^3.1.1",
     "turbo": "^1.13.4",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "@faker-js/faker": "^8.4.1",
+    "tsx": "^4.7.1"
   },
   "workspaces": [
     "apps/*",
