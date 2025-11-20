@@ -1,0 +1,20 @@
+{
+  "name": "admin-billing-audit",
+  "version": "1.0.0",
+  "description": "Admin Billing & Audit module for phase 7 part 3",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "typescript": "^5.3.0"
+  }
+}
