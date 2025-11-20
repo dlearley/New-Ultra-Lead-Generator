@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Table, Map } from "lucide-react";
+import { Table, Map, Brain, MessageSquare } from "lucide-react";
 import { SearchBar } from "@/components/search/search-bar";
 import { FilterSidebar } from "@/components/search/filter-sidebar";
 import { ResultsTable } from "@/components/search/results-table";
@@ -9,6 +9,10 @@ import { ProspectMap } from "@/components/search/prospect-map";
 import { Pagination } from "@/components/search/pagination";
 import { QuickActions } from "@/components/search/quick-actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AISummaryModal } from "@prospecting-platform/ui";
+import { AIOutreachModal } from "@prospecting-platform/ui";
+import { useToast } from "@prospecting-platform/ui";
+import { ResponsiveContainer, ResponsiveFlex } from "@prospecting-platform/ui";
 import type {
   ProspectFilters,
   Prospect,
@@ -25,15 +29,18 @@ import {
 import { DEFAULT_PAGE_SIZE } from "@/data/reference-data";
 
 export default function SearchPage() {
+  const { toast } = useToast();
   const [filters, setFilters] = useState<ProspectFilters>(createDefaultFilters());
   const [searchQuery, setSearchQuery] = useState("");
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null);
+  const [selectedProspectIds, setSelectedProspectIds] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "map">("table");
+  const [isMobile, setIsMobile] = useState(false);
   
   const [sortState, setSortState] = useState<SortState>({
     field: "aiLeadScore",
@@ -68,6 +75,49 @@ export default function SearchPage() {
   useEffect(() => {
     performSearch();
   }, [performSearch]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleSelectProspect = (prospectId: string) => {
+    setSelectedProspectId(prospectId);
+    setSelectedProspectIds(prev => 
+      prev.includes(prospectId) 
+        ? prev.filter(id => id !== prospectId)
+        : [...prev, prospectId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProspectIds.length === prospects.length) {
+      setSelectedProspectIds([]);
+    } else {
+      setSelectedProspectIds(prospects.map(p => p.id));
+    }
+  };
+
+  const handleAISummaryGenerated = (summary: string) => {
+    toast({
+      title: "Summary Generated",
+      description: "AI summary has been successfully generated.",
+      variant: "success",
+    });
+  };
+
+  const handleAIOutreachGenerated = (content: string, type: 'email' | 'linkedin') => {
+    toast({
+      title: "Outreach Generated",
+      description: `Personalized ${type} message has been created.`,
+      variant: "success",
+    });
+  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -112,93 +162,190 @@ export default function SearchPage() {
   };
 
   const handleSaveSearch = async (name: string) => {
-    await saveSearch(name, filters);
+    try {
+      await saveSearch(name, filters);
+      toast({
+        title: "Search Saved",
+        description: `Search "${name}" has been saved successfully.`,
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Unable to save search. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddToList = async (listId: string) => {
-    const prospectIds = prospects.map((p) => p.id);
-    await addToList(listId, prospectIds);
+    try {
+      const prospectIds = prospects.map((p) => p.id);
+      await addToList(listId, prospectIds);
+      toast({
+        title: "Added to List",
+        description: `Prospects have been added to the list.`,
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Add Failed",
+        description: "Unable to add prospects to list. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="flex min-h-screen">
-      <FilterSidebar filters={filters} onFiltersChange={handleFiltersChange} />
+    <>
+      <a href="#main-content" className="skip-to-main">
+        Skip to main content
+      </a>
+      
+      <ResponsiveFlex direction={{ default: "col", md: "row" }} className="min-h-screen">
+        <FilterSidebar 
+          filters={filters} 
+          onFiltersChange={handleFiltersChange} 
+          isMobile={isMobile}
+        />
 
-      <main className="flex-1 bg-zinc-50 p-8 dark:bg-black">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8">
-            <h1 className="mb-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-              Find Your Next Customers
-            </h1>
-            <p className="text-zinc-600 dark:text-zinc-400">
-              AI-powered search to discover high-potential prospects
-            </p>
-          </div>
+        <main id="main-content" className="flex-1 bg-zinc-50 dark:bg-black">
+          <ResponsiveContainer maxWidth="full" padding={{ default: "sm", md: "lg" }}>
+            <div className="mb-6 md:mb-8">
+              <h1 className="mb-2 text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                Find Your Next Customers
+              </h1>
+              <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400">
+                AI-powered search to discover high-potential prospects
+              </p>
+            </div>
 
-          <div className="mb-8">
-            <SearchBar
-              onSearch={handleSearch}
-              isLoading={isSearching || isParsing}
-              defaultValue={searchQuery}
-            />
-          </div>
+            <div className="mb-6 md:mb-8">
+              <SearchBar
+                onSearch={handleSearch}
+                isLoading={isSearching || isParsing}
+                defaultValue={searchQuery}
+              />
+            </div>
 
-          {!isInitialLoad && (
-            <>
-              <div className="mb-6">
-                <QuickActions onSaveSearch={handleSaveSearch} onAddToList={handleAddToList} />
-              </div>
+            {!isInitialLoad && (
+              <>
+                <div className="mb-6">
+                  <ResponsiveFlex 
+                    direction={{ default: "col", sm: "row" }} 
+                    justify="between" 
+                    align="center"
+                    gap="md"
+                  >
+                    <QuickActions 
+                      onSaveSearch={handleSaveSearch} 
+                      onAddToList={handleAddToList} 
+                    />
+                    
+                    <div className="flex items-center gap-2">
+                      <AISummaryModal
+                        prospectIds={selectedProspectIds.length > 0 ? selectedProspectIds : prospects.map(p => p.id)}
+                        onSummaryGenerated={handleAISummaryGenerated}
+                        trigger={
+                          <button
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={prospects.length === 0}
+                            aria-label="Generate AI summary"
+                          >
+                            <Brain className="h-4 w-4" />
+                            <span className="hidden sm:inline">AI Summary</span>
+                            <span className="sm:hidden">Summary</span>
+                          </button>
+                        }
+                      />
+                      
+                      <AIOutreachModal
+                        prospectIds={selectedProspectIds.length > 0 ? selectedProspectIds : prospects.map(p => p.id)}
+                        onOutreachGenerated={handleAIOutreachGenerated}
+                        trigger={
+                          <button
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={prospects.length === 0}
+                            aria-label="Generate AI outreach"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            <span className="hidden sm:inline">AI Outreach</span>
+                            <span className="sm:hidden">Outreach</span>
+                          </button>
+                        }
+                      />
+                    </div>
+                  </ResponsiveFlex>
+                </div>
 
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "map")}>
-                <div className="mb-6 flex items-center justify-between">
-                  <div className="text-lg font-medium text-zinc-900 dark:text-zinc-50">
-                    {total} results found
+                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "map")}>
+                  <div className="mb-6">
+                    <ResponsiveFlex 
+                      direction={{ default: "col", sm: "row" }} 
+                      justify="between" 
+                      align="center"
+                      gap="sm"
+                    >
+                      <div className="text-base md:text-lg font-medium text-zinc-900 dark:text-zinc-50">
+                        {total} results found
+                        {selectedProspectIds.length > 0 && (
+                          <span className="ml-2 text-sm text-zinc-500">
+                            ({selectedProspectIds.length} selected)
+                          </span>
+                        )}
+                      </div>
+                      <TabsList>
+                        <TabsTrigger value="table" className="flex items-center gap-2">
+                          <Table className="h-4 w-4" />
+                          <span className="hidden sm:inline">Table</span>
+                          <span className="sm:hidden">List</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="map" className="flex items-center gap-2">
+                          <Map className="h-4 w-4" />
+                          <span className="hidden sm:inline">Map</span>
+                          <span className="sm:hidden">Map</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </ResponsiveFlex>
                   </div>
-                  <TabsList>
-                    <TabsTrigger value="table">
-                      <Table className="mr-2 h-4 w-4" />
-                      Table
-                    </TabsTrigger>
-                    <TabsTrigger value="map">
-                      <Map className="mr-2 h-4 w-4" />
-                      Map
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
 
-                <TabsContent value="table">
-                  <ResultsTable
-                    prospects={prospects}
-                    isLoading={isSearching}
-                    selectedId={selectedProspectId || undefined}
-                    onSelectProspect={setSelectedProspectId}
-                    sortState={sortState}
-                    onSortChange={handleSortChange}
-                  />
-                </TabsContent>
+                  <TabsContent value="table">
+                    <ResultsTable
+                      prospects={prospects}
+                      isLoading={isSearching}
+                      selectedId={selectedProspectId || undefined}
+                      selectedIds={selectedProspectIds}
+                      onSelectProspect={handleSelectProspect}
+                      onSelectAll={handleSelectAll}
+                      sortState={sortState}
+                      onSortChange={handleSortChange}
+                    />
+                  </TabsContent>
 
-                <TabsContent value="map">
-                  <ProspectMap
-                    prospects={prospects}
-                    selectedId={selectedProspectId}
-                    onSelectProspect={setSelectedProspectId}
-                  />
-                </TabsContent>
-              </Tabs>
+                  <TabsContent value="map">
+                    <ProspectMap
+                      prospects={prospects}
+                      selectedId={selectedProspectId}
+                      selectedIds={selectedProspectIds}
+                      onSelectProspect={handleSelectProspect}
+                    />
+                  </TabsContent>
+                </Tabs>
 
-              {total > 0 && (
-                <div className="mt-8">
-                  <Pagination
-                    pagination={pagination}
-                    total={total}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+                {total > 0 && (
+                  <div className="mt-6 md:mt-8">
+                    <Pagination
+                      pagination={pagination}
+                      total={total}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </ResponsiveContainer>
+        </main>
+      </ResponsiveFlex>
+    </>
   );
 }

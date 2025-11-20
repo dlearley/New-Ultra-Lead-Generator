@@ -73,10 +73,11 @@ const unclusteredPointLayer: any = {
 interface ProspectMapProps {
   prospects: Prospect[];
   selectedId?: string | null;
+  selectedIds?: string[];
   onSelectProspect?: (id: string) => void;
 }
 
-export function ProspectMap({ prospects, selectedId, onSelectProspect }: ProspectMapProps) {
+export function ProspectMap({ prospects, selectedId, selectedIds = [], onSelectProspect }: ProspectMapProps) {
   const [mapRef, setMapRef] = useState<MapRef | null>(null);
 
   const data = useMemo<FeatureCollection<Point>>(

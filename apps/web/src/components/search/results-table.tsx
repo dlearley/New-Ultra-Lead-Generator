@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown, MoreVertical, Star, TrendingUp, Users, DollarSign } from "lucide-react";
+import { ArrowUpDown, MoreVertical, Star, TrendingUp, Users, DollarSign, CheckSquare, Square } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +10,9 @@ interface ResultsTableProps {
   prospects: Prospect[];
   isLoading?: boolean;
   selectedId?: string;
+  selectedIds?: string[];
   onSelectProspect: (id: string) => void;
+  onSelectAll?: () => void;
   sortState: SortState;
   onSortChange: (field: SortState["field"]) => void;
 }
@@ -19,7 +21,9 @@ export function ResultsTable({
   prospects,
   isLoading,
   selectedId,
+  selectedIds = [],
   onSelectProspect,
+  onSelectAll,
   sortState,
   onSortChange,
 }: ResultsTableProps) {
@@ -67,26 +71,50 @@ export function ResultsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 text-sm text-zinc-500">
-        <button
-          onClick={() => onSortChange("aiLeadScore")}
-          className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-50"
-        >
-          AI Score
-          <ArrowUpDown className="h-3 w-3" />
-        </button>
-        <button
-          onClick={() => onSortChange("name")}
-          className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-50"
-        >
-          Name
-          <ArrowUpDown className="h-3 w-3" />
-        </button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 text-sm text-zinc-500">
+          {onSelectAll && (
+            <button
+              onClick={onSelectAll}
+              className="flex items-center gap-2 hover:text-zinc-900 dark:hover:text-zinc-50"
+              aria-label={selectedIds.length === prospects.length ? "Deselect all" : "Select all"}
+            >
+              {selectedIds.length === prospects.length ? (
+                <CheckSquare className="h-4 w-4" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {selectedIds.length === prospects.length ? "Deselect All" : "Select All"}
+              </span>
+            </button>
+          )}
+          <button
+            onClick={() => onSortChange("aiLeadScore")}
+            className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-50"
+          >
+            AI Score
+            <ArrowUpDown className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => onSortChange("name")}
+            className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-50"
+          >
+            Name
+            <ArrowUpDown className="h-3 w-3" />
+          </button>
+        </div>
+        {selectedIds.length > 0 && (
+          <div className="text-sm text-zinc-500">
+            {selectedIds.length} selected
+          </div>
+        )}
       </div>
 
       {prospects.map((prospect) => {
         const leadScore = getLeadScoreBadge(prospect.aiLeadScore);
         const isSelected = selectedId === prospect.id;
+        const isMultiSelected = selectedIds.includes(prospect.id);
 
         return (
           <div
@@ -102,10 +130,25 @@ export function ResultsTable({
             `}
           >
             <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-start gap-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              <div className="flex items-start gap-3">
+                {selectedIds.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectProspect(prospect.id);
+                    }}
+                    className="mt-1 flex-shrink-0"
+                    aria-label={isMultiSelected ? "Deselect prospect" : "Select prospect"}
+                  >
+                    {isMultiSelected ? (
+                      <CheckSquare className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                    ) : (
+                      <Square className="h-4 w-4 text-zinc-400 dark:text-zinc-600" />
+                    )}
+                  </button>
+                )}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
                       {prospect.name}
                     </h3>
                     <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
