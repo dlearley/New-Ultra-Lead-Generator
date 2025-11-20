@@ -1,0 +1,148 @@
+.alerts-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: white;
+}
+
+.alerts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.alerts-header h1 {
+  margin: 0;
+}
+
+.alerts-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.alerts-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.alerts-sidebar {
+  width: 300px;
+  border-left: 1px solid #eee;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+.alert-form {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.alert-list h3 {
+  margin-bottom: 16px;
+}
+
+.alerts {
+  list-style: none;
+}
+
+.alert-item {
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.alert-item:hover {
+  border-color: #007bff;
+  background-color: #f8f9ff;
+}
+
+.alert-item.active {
+  border-color: #007bff;
+  background-color: #e7f2ff;
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.alert-name {
+  font-weight: 600;
+}
+
+.alert-details {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.cadence,
+.channels {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.last-run {
+  font-size: 11px;
+  color: #999;
+}
+
+.alert-run-history h3 {
+  margin-bottom: 16px;
+}
+
+.runs {
+  list-style: none;
+}
+
+.run-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.run-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.run-date {
+  font-size: 12px;
+  color: #666;
+}
+
+.run-details {
+  font-size: 13px;
+}
+
+.leads-count {
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+}
