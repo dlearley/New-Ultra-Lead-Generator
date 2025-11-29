@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Webhooks - Webhook Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Webhook Management</h2>
+    <p>Configure webhook endpoints to receive real-time notifications for lead events.</p>
+</div>
+
+<div class="card">
+    <h3>Create New Webhook Endpoint</h3>
+    <form id="createWebhookForm">
+        <div class="form-group">
+            <label for="url">Endpoint URL</label>
+            <input type="url" id="url" name="url" required placeholder="https://example.com/webhook">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description" placeholder="Optional description">
+        </div>
+        
+        <div class="form-group">
+            <label>Events to Subscribe</label>
+            <div>
+                <label style="display: inline; font-weight: normal; margin-right: 15px;">
+                    <input type="checkbox" name="events" value="new_lead" checked> New Lead
+                </label>
+                <label style="display: inline; font-weight: normal;">
+                    <input type="checkbox" name="events" value="lead_update" checked> Lead Update
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="max_retries">Max Retries</label>
+            <input type="number" id="max_retries" name="max_retries" value="5" min="0" max="10">
+        </div>
+        
+        <div class="form-group">
+            <label for="timeout">Timeout (seconds)</label>
+            <input type="number" id="timeout" name="timeout" value="30" min="5" max="120">
+        </div>
+        
+        <button type="submit" class="btn">Create Webhook</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Your Webhook Endpoints</h3>
+    <div id="webhooksList">
+        <p>Loading...</p>
+    </div>
+</div>
+
+<div id="secretModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3>Webhook Created Successfully!</h3>
+        <p style="color: #e74c3c; margin: 15px 0;"><strong>⚠️ Save this secret now. You won't be able to see it again!</strong></p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; word-break: break-all; font-family: monospace; margin: 15px 0;">
+            <span id="secretValue"></span>
+        </div>
+        <p style="font-size: 14px; color: #666;">Use this secret to verify webhook signatures.</p>
+        <button onclick="copySecret()" class="btn" style="margin-right: 10px;">Copy Secret</button>
+        <button onclick="closeSecretModal()" class="btn btn-danger">Close</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const API_BASE = '/api/v1';
+    let authToken = localStorage.getItem('apiKey') || 'Bearer demo-key';
+    
+    async function loadWebhooks() {
+        try {
+            const response = await fetch(`${API_BASE}/webhooks`, {
+                headers: {
+                    'Authorization': authToken
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to load webhooks');
+            
+            const webhooks = await response.json();
+            displayWebhooks(webhooks);
+        } catch (error) {
+            document.getElementById('webhooksList').innerHTML = `<p style="color: #e74c3c;">Error loading webhooks. Make sure you're authenticated.</p>`;
+        }
+    }
+    
+    function displayWebhooks(webhooks) {
+        if (webhooks.length === 0) {
+            document.getElementById('webhooksList').innerHTML = '<p>No webhook endpoints found. Create one above.</p>';
+            return;
+        }
+        
+        const table = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Events</th>
+                        <th>Status</th>
+                        <th>Max Retries</th>
+                        <th>Timeout</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${webhooks.map(webhook => `
+                        <tr>
+                            <td><a href="${webhook.url}" target="_blank">${webhook.url}</a></td>
+                            <td>
+                                ${webhook.events.map(e => `<span class="badge badge-info">${e}</span>`).join(' ')}
+                            </td>
+                            <td>
+                                ${webhook.is_active 
+                                    ? '<span class="badge badge-success">Active</span>' 
+                                    : '<span class="badge badge-danger">Inactive</span>'}
+                            </td>
+                            <td>${webhook.max_retries}</td>
+                            <td>${webhook.timeout}s</td>
+                            <td>${new Date(webhook.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <button onclick="toggleWebhook('${webhook.id}', ${!webhook.is_active})" class="btn">
+                                    ${webhook.is_active ? 'Disable' : 'Enable'}
+                                </button>
+                                <button onclick="deleteWebhook('${webhook.id}')" class="btn btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        
+        document.getElementById('webhooksList').innerHTML = table;
+    }
+    
+    document.getElementById('createWebhookForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const events = Array.from(formData.getAll('events'));
+        
+        const data = {
+            url: formData.get('url'),
+            description: formData.get('description') || null,
+            events: events,
+            max_retries: parseInt(formData.get('max_retries')),
+            timeout: parseInt(formData.get('timeout'))
+        };
+        
+        try {
+            const response = await fetch(`${API_BASE}/webhooks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authToken
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) throw new Error('Failed to create webhook');
+            
+            const result = await response.json();
+            document.getElementById('secretValue').textContent = result.secret;
+            document.getElementById('secretModal').style.display = 'block';
+            
+            e.target.reset();
+            await loadWebhooks();
+        } catch (error) {
+            alert('Error creating webhook: ' + error.message);
+        }
+    });
+    
+    async function toggleWebhook(webhookId, isActive) {
+        try {
+            const response = await fetch(`${API_BASE}/webhooks/${webhookId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authToken
+                },
+                body: JSON.stringify({ is_active: isActive })
+            });
+            
+            if (!response.ok) throw new Error('Failed to update webhook');
+            
+            await loadWebhooks();
+        } catch (error) {
+            alert('Error updating webhook: ' + error.message);
+        }
+    }
+    
+    async function deleteWebhook(webhookId) {
+        if (!confirm('Are you sure you want to delete this webhook? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/webhooks/${webhookId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': authToken
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete webhook');
+            
+            await loadWebhooks();
+        } catch (error) {
+            alert('Error deleting webhook: ' + error.message);
+        }
+    }
+    
+    function copySecret() {
+        const secret = document.getElementById('secretValue').textContent;
+        navigator.clipboard.writeText(secret);
+        alert('Secret copied to clipboard!');
+    }
+    
+    function closeSecretModal() {
+        document.getElementById('secretModal').style.display = 'none';
+    }
+    
+    loadWebhooks();
+</script>
+{% endblock %}

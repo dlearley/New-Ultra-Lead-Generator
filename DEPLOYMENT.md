@@ -1,385 +1,438 @@
 # Deployment Guide
 
+## Overview
+
+This guide covers deploying the Webhook & API Key Management system to production.
+
 ## Prerequisites
 
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- PostgreSQL 12+ (for production database)
+- Python 3.11+
+- PostgreSQL 14+
+- Redis 6+
+- Systemd (for service management) or Docker/Kubernetes
 
-## Local Development Setup
+## Environment Variables
 
-### 1. Clone and Install
-
-```bash
-git clone <repository>
-cd admin-billing-audit
-pnpm install
-```
-
-### 2. Environment Setup
-
-Create `.env` files in both packages:
-
-**packages/api/.env**
-```
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
-DATABASE_NAME=admin_billing
-PORT=3001
-NODE_ENV=development
-STRIPE_API_KEY=sk_test_
-CORS_ORIGIN=http://localhost:3000
-```
-
-**packages/web/.env.local**
-```
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-API_URL=http://localhost:3001/api
-```
-
-### 3. Database Setup
+Create a `.env` file with production values:
 
 ```bash
-# Start PostgreSQL with Docker
-docker run -d \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=admin_billing \
-  -p 5432:5432 \
-  postgres:15-alpine
+# Database
+DATABASE_URL=postgresql://user:password@db-host:5432/webhooks_db
 
-# Run migrations (if TypeORM migrations are set up)
-pnpm --filter api run migrate
+# Redis
+REDIS_URL=redis://redis-host:6379/0
+
+# Security
+SECRET_KEY=generate-a-strong-random-secret-key
+
+# API Settings
+API_VERSION=v1
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+
+# Celery
+CELERY_BROKER_URL=redis://redis-host:6379/1
+CELERY_RESULT_BACKEND=redis://redis-host:6379/2
+
+# Webhook Settings
+WEBHOOK_MAX_RETRIES=5
+WEBHOOK_INITIAL_RETRY_DELAY=1
+WEBHOOK_RETRY_MULTIPLIER=2
+WEBHOOK_TIMEOUT=30
+
+# Rate Limiting
+DEFAULT_RATE_LIMIT=1000
+RATE_LIMIT_WINDOW=3600
 ```
 
-### 4. Start Development Servers
+**⚠️ Security Note:** Never commit `.env` to version control!
 
+## Deployment Options
+
+### Option 1: Docker Compose (Recommended for Quick Start)
+
+1. **Clone the repository:**
 ```bash
-# Terminal 1 - API
-pnpm --filter api run dev
-
-# Terminal 2 - Web
-pnpm --filter web run dev
+git clone <repository-url>
+cd webhook-api-keys
 ```
 
-Visit:
-- Frontend: http://localhost:3000
-- API: http://localhost:3001
+2. **Create `.env` file:**
+```bash
+cp .env.example .env
+# Edit .env with your production values
+```
 
-## Docker Compose Deployment
-
-### Quick Start
-
+3. **Start services:**
 ```bash
 docker-compose up -d
 ```
 
-This will:
-- Start PostgreSQL database
-- Build and start the API server
-- Build and start the Next.js frontend
+4. **Run migrations:**
+```bash
+docker-compose exec api alembic upgrade head
+```
 
-### View Logs
+5. **Verify:**
+```bash
+curl http://localhost:8000/health
+```
+
+### Option 2: Manual Deployment
+
+#### 1. Install Dependencies
 
 ```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f api
-docker-compose logs -f web
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### Stop Services
+#### 2. Setup Database
 
 ```bash
-docker-compose down
-```
-
-### Clean Up (with data deletion)
-
-```bash
-docker-compose down -v
-```
-
-## Production Deployment
-
-### 1. Build Docker Images
-
-```bash
-# API
-docker build -f packages/api/Dockerfile -t admin-billing-api:latest .
-
-# Web
-docker build -f packages/web/Dockerfile -t admin-billing-web:latest .
-```
-
-### 2. Push to Registry
-
-```bash
-docker tag admin-billing-api:latest <registry>/admin-billing-api:latest
-docker tag admin-billing-web:latest <registry>/admin-billing-web:latest
-
-docker push <registry>/admin-billing-api:latest
-docker push <registry>/admin-billing-web:latest
-```
-
-### 3. Environment Variables (Production)
-
-**API Environment:**
-```
-DATABASE_HOST=prod-db.example.com
-DATABASE_PORT=5432
-DATABASE_USER=prod_user
-DATABASE_PASSWORD=<secure-password>
-DATABASE_NAME=admin_billing_prod
-PORT=3001
-NODE_ENV=production
-STRIPE_API_KEY=sk_live_<key>
-CORS_ORIGIN=https://admin.example.com
-JWT_SECRET=<secure-random-string>
-```
-
-**Web Environment:**
-```
-NEXT_PUBLIC_API_URL=https://api.example.com/api
-API_URL=https://api.example.com/api
-```
-
-### 4. Database Migration
-
-```bash
-# Connection to production database
-export DATABASE_URL=postgresql://user:password@host:5432/admin_billing_prod
+# Create PostgreSQL database
+createdb webhooks_db
 
 # Run migrations
-pnpm --filter api run migrate:prod
+alembic upgrade head
 ```
 
-### 5. Kubernetes Deployment Example
+#### 3. Create Systemd Services
 
-**api-deployment.yaml**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: admin-billing-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: admin-billing-api
-  template:
-    metadata:
-      labels:
-        app: admin-billing-api
-    spec:
-      containers:
-      - name: api
-        image: registry/admin-billing-api:latest
-        ports:
-        - containerPort: 3001
-        env:
-        - name: DATABASE_HOST
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: host
-        - name: DATABASE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: password
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3001
-          initialDelaySeconds: 30
-          periodSeconds: 10
+**API Service** (`/etc/systemd/system/webhooks-api.service`):
+
+```ini
+[Unit]
+Description=Webhooks API Service
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=notify
+User=www-data
+WorkingDirectory=/opt/webhooks-api
+Environment="PATH=/opt/webhooks-api/venv/bin"
+EnvironmentFile=/opt/webhooks-api/.env
+ExecStart=/opt/webhooks-api/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-**web-deployment.yaml**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: admin-billing-web
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: admin-billing-web
-  template:
-    metadata:
-      labels:
-        app: admin-billing-web
-    spec:
-      containers:
-      - name: web
-        image: registry/admin-billing-web:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NEXT_PUBLIC_API_URL
-          value: "https://api.example.com/api"
+**Worker Service** (`/etc/systemd/system/webhooks-worker.service`):
+
+```ini
+[Unit]
+Description=Webhooks Worker Service
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/webhooks-api
+Environment="PATH=/opt/webhooks-api/venv/bin"
+EnvironmentFile=/opt/webhooks-api/.env
+ExecStart=/opt/webhooks-api/venv/bin/celery -A app.worker.celery_app worker --loglevel=info --concurrency=4
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-### 6. Scale Services
+#### 4. Enable and Start Services
 
 ```bash
-# Scale API
-kubectl scale deployment admin-billing-api --replicas=5
-
-# Scale Web
-kubectl scale deployment admin-billing-web --replicas=5
+sudo systemctl daemon-reload
+sudo systemctl enable webhooks-api webhooks-worker
+sudo systemctl start webhooks-api webhooks-worker
+sudo systemctl status webhooks-api webhooks-worker
 ```
 
-## Health Checks
+### Option 3: Kubernetes
 
-### API Health Endpoint
+See `k8s/` directory for Kubernetes manifests (not included, create as needed).
 
-Add to `packages/api/src/main.ts`:
-```typescript
-@Get('health')
-health() {
-  return { status: 'ok', timestamp: new Date() };
+## Nginx Configuration
+
+**Reverse Proxy** (`/etc/nginx/sites-available/webhooks-api`):
+
+```nginx
+upstream webhooks_api {
+    server 127.0.0.1:8000;
+}
+
+server {
+    listen 80;
+    server_name api.yourdomain.com;
+    
+    # Redirect to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.yourdomain.com;
+    
+    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # API proxy
+    location / {
+        proxy_pass http://webhooks_api;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    # Static files (if needed)
+    location /static {
+        alias /opt/webhooks-api/static;
+        expires 30d;
+    }
+    
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+    limit_req zone=api_limit burst=20 nodelay;
 }
 ```
 
-Test:
+Enable the site:
 ```bash
-curl http://localhost:3001/health
+sudo ln -s /etc/nginx/sites-available/webhooks-api /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
-### Database Health Check
+## SSL/TLS Configuration
 
-```bash
-# From container
-docker-compose exec postgres pg_isready -U postgres
-```
-
-## Monitoring & Logging
-
-### Log Aggregation
-
-All operations log to:
-1. Console (development)
-2. Structured JSON logs (production)
-3. Audit log database (all admin operations)
-
-### Key Metrics to Monitor
-
-- API response times
-- Database connection pool usage
-- Audit log volume
-- Billing update frequency
-- AI model accuracy metrics
-
-### Example Prometheus Metrics
-
-```
-admin_billing_requests_total
-admin_billing_request_duration_seconds
-admin_billing_database_connections
-admin_billing_audit_logs_total
-```
-
-## Backup & Recovery
-
-### Database Backup
+Use Let's Encrypt for free SSL certificates:
 
 ```bash
-# Create backup
-docker-compose exec postgres pg_dump -U postgres admin_billing > backup.sql
-
-# Restore backup
-docker-compose exec -T postgres psql -U postgres admin_billing < backup.sql
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d api.yourdomain.com
 ```
 
-### Automated Backups
+## Monitoring
 
-Set up cron job:
+### Health Checks
+
 ```bash
-0 2 * * * docker-compose exec -T postgres pg_dump -U postgres admin_billing | gzip > /backups/admin_billing_$(date +\%Y\%m\%d).sql.gz
+# API health
+curl https://api.yourdomain.com/health
+
+# Expected: {"status": "healthy"}
+```
+
+### Logs
+
+**Docker:**
+```bash
+docker-compose logs -f api
+docker-compose logs -f worker
+```
+
+**Systemd:**
+```bash
+journalctl -u webhooks-api -f
+journalctl -u webhooks-worker -f
+```
+
+### Metrics
+
+Consider adding:
+- Prometheus for metrics collection
+- Grafana for visualization
+- Sentry for error tracking
+- Datadog/New Relic for APM
+
+## Database Backups
+
+**PostgreSQL Backup Script:**
+
+```bash
+#!/bin/bash
+# /opt/webhooks-api/scripts/backup.sh
+
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR=/backups/webhooks-db
+BACKUP_FILE=$BACKUP_DIR/webhooks_db_$DATE.sql.gz
+
+mkdir -p $BACKUP_DIR
+
+pg_dump -h localhost -U webhook_user webhooks_db | gzip > $BACKUP_FILE
+
+# Keep only last 7 days
+find $BACKUP_DIR -name "webhooks_db_*.sql.gz" -mtime +7 -delete
+
+echo "Backup completed: $BACKUP_FILE"
+```
+
+**Cron Job:**
+```bash
+# Daily backup at 2 AM
+0 2 * * * /opt/webhooks-api/scripts/backup.sh
+```
+
+## Scaling
+
+### Horizontal Scaling
+
+1. **API Servers**: Run multiple instances behind a load balancer
+2. **Workers**: Increase Celery worker instances
+3. **Database**: Use PostgreSQL replication for read replicas
+4. **Redis**: Use Redis Cluster or Redis Sentinel
+
+### Vertical Scaling
+
+- Increase server resources (CPU, RAM)
+- Optimize database queries
+- Add database indexes
+- Enable caching
+
+## Security Checklist
+
+- [ ] Use HTTPS for all endpoints
+- [ ] Set strong `SECRET_KEY` in production
+- [ ] Enable database connection SSL
+- [ ] Use Redis AUTH password
+- [ ] Restrict database/Redis access by IP
+- [ ] Enable firewall rules
+- [ ] Regular security updates
+- [ ] API rate limiting configured
+- [ ] Log monitoring enabled
+- [ ] Backup strategy implemented
+- [ ] SSL certificates configured
+- [ ] Security headers enabled in Nginx
+- [ ] Remove default admin credentials
+
+## Performance Tuning
+
+### Database
+
+```sql
+-- Add indexes for common queries
+CREATE INDEX idx_webhook_deliveries_status ON webhook_deliveries(status);
+CREATE INDEX idx_webhook_deliveries_endpoint_id ON webhook_deliveries(endpoint_id);
+CREATE INDEX idx_api_keys_organization_id ON api_keys(organization_id);
+```
+
+### Redis
+
+```bash
+# In redis.conf
+maxmemory 2gb
+maxmemory-policy allkeys-lru
+```
+
+### Uvicorn
+
+```bash
+# Use multiple workers (= CPU cores)
+uvicorn app.main:app --workers 4 --host 0.0.0.0 --port 8000
+```
+
+### Celery
+
+```bash
+# Increase concurrency
+celery -A app.worker.celery_app worker --concurrency=8
 ```
 
 ## Troubleshooting
 
-### Database Connection Issues
-
-```bash
-# Check if database is running
-docker-compose ps
-
-# View database logs
-docker-compose logs postgres
-
-# Test connection
-docker-compose exec api npm run test:db
-```
-
 ### API Not Responding
 
 ```bash
-# Check API logs
-docker-compose logs api
+# Check service status
+sudo systemctl status webhooks-api
 
-# Verify port is open
-netstat -tlnp | grep 3001
+# Check logs
+journalctl -u webhooks-api -n 100
+
+# Check port
+sudo netstat -tlnp | grep 8000
 ```
 
-### Frontend Not Loading
+### Worker Not Processing Tasks
 
 ```bash
-# Check web logs
-docker-compose logs web
+# Check worker status
+sudo systemctl status webhooks-worker
 
-# Clear cache
-docker-compose exec web rm -rf .next
+# Check Celery queue
+celery -A app.worker.celery_app inspect active
 
-# Rebuild
-docker-compose up --build web
+# Check Redis connection
+redis-cli ping
 ```
 
-## Performance Tuning
+### Database Connection Issues
 
-### Database Optimization
+```bash
+# Check PostgreSQL status
+sudo systemctl status postgresql
 
-```sql
--- Create indexes for common queries
-CREATE INDEX idx_billing_org_status ON billing(organizationId, status);
-CREATE INDEX idx_audit_logs_org_date ON audit_logs(organizationId, createdAt DESC);
+# Test connection
+psql -h localhost -U webhook_user -d webhooks_db
+
+# Check connection limits
+psql -c "SELECT count(*) FROM pg_stat_activity;"
 ```
 
-### API Optimization
+## Updates and Maintenance
 
-- Enable gzip compression
-- Implement response caching
-- Use connection pooling
-- Optimize database queries
+### Deploying Updates
 
-### Frontend Optimization
+```bash
+# Pull latest code
+git pull origin main
 
-- Enable static generation for pages
-- Implement code splitting
-- Use image optimization
-- Enable API route caching
+# Activate virtual environment
+source venv/bin/activate
 
-## Security Best Practices
+# Install dependencies
+pip install -r requirements.txt
 
-1. **Secrets Management**: Use secret managers (AWS Secrets Manager, HashiCorp Vault)
-2. **Database**: Enable SSL/TLS for connections
-3. **API**: Use HTTPS in production
-4. **CORS**: Restrict to known origins
-5. **Rate Limiting**: Implement per-IP rate limits
-6. **Audit Logging**: Enable comprehensive logging
-7. **Data Encryption**: Encrypt sensitive data at rest and in transit
+# Run migrations
+alembic upgrade head
+
+# Restart services
+sudo systemctl restart webhooks-api webhooks-worker
+```
+
+### Database Migrations
+
+```bash
+# Check current version
+alembic current
+
+# Upgrade to latest
+alembic upgrade head
+
+# Rollback one version
+alembic downgrade -1
+```
 
 ## Support
 
-For issues or questions, refer to:
-- README.md for feature documentation
-- API documentation (Swagger/OpenAPI)
-- Audit logs for debugging
+For issues or questions:
+- Check logs first
+- Review documentation
+- Open GitHub issue
+- Contact support team
+
+## License
+
+MIT License - See LICENSE file for details

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Webhook Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Welcome to Webhook & API Key Management</h2>
+    <p>Manage your organization's API keys and webhook endpoints from this dashboard.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+    <div class="card">
+        <h3>🔑 API Keys</h3>
+        <p>Create and manage API keys for your organization with role-based access and rate limiting.</p>
+        <a href="/admin/api-keys" class="btn" style="display: inline-block; text-decoration: none; margin-top: 10px;">Manage API Keys</a>
+    </div>
+    
+    <div class="card">
+        <h3>🪝 Webhooks</h3>
+        <p>Configure webhook endpoints to receive real-time notifications for lead events.</p>
+        <a href="/admin/webhooks" class="btn" style="display: inline-block; text-decoration: none; margin-top: 10px;">Manage Webhooks</a>
+    </div>
+    
+    <div class="card">
+        <h3>📊 Delivery History</h3>
+        <p>View webhook delivery logs, retry attempts, and debug failed deliveries.</p>
+        <a href="/admin/deliveries" class="btn" style="display: inline-block; text-decoration: none; margin-top: 10px;">View History</a>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2>Quick Start</h2>
+    <ol style="line-height: 2;">
+        <li>Create an API key to authenticate your requests</li>
+        <li>Configure a webhook endpoint to receive event notifications</li>
+        <li>Subscribe to events: <code>new_lead</code> and <code>lead_update</code></li>
+        <li>Monitor delivery logs to ensure webhooks are being delivered</li>
+    </ol>
+</div>
+
+<div class="card">
+    <h2>Documentation</h2>
+    <p>For API documentation and integration guides, visit <a href="/docs" style="color: #3498db;">Interactive API Docs</a>.</p>
+</div>
+{% endblock %}

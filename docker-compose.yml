@@ -1,82 +1,68 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
   postgres:
-    image: postgres:15
-    container_name: crm-postgres
+    image: postgres:14
     environment:
-      POSTGRES_DB: crm_integration
-      POSTGRES_USER: crm_user
-      POSTGRES_PASSWORD: crm_password
+      POSTGRES_USER: webhook_user
+      POSTGRES_PASSWORD: webhook_pass
+      POSTGRES_DB: webhooks_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - crm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webhook_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Redis for BullMQ
   redis:
-    image: redis:7-alpine
-    container_name: crm-redis
+    image: redis:6
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    networks:
-      - crm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # API Server
   api:
-    build:
-      context: ./apps/api
-      dockerfile: Dockerfile
-    container_name: crm-api
-    environment:
-      NODE_ENV: development
-      PORT: 3001
-      DATABASE_URL: postgresql://crm_user:crm_password@postgres:5432/crm_integration
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      CORS_ORIGIN: http://localhost:3000
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
-      - "3001:3001"
-    depends_on:
-      - postgres
-      - redis
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://webhook_user:webhook_pass@postgres:5432/webhooks_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
     volumes:
-      - ./apps/api:/app
-      - /app/node_modules
-    networks:
-      - crm-network
-    command: npm run dev
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Web App
-  web:
-    build:
-      context: ./apps/web
-      dockerfile: Dockerfile
-    container_name: crm-web
+  worker:
+    build: .
+    command: celery -A app.worker.celery_app worker --loglevel=info
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXT_PUBLIC_ORGANIZATION_ID: demo-org-id
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
+      DATABASE_URL: postgresql://webhook_user:webhook_pass@postgres:5432/webhooks_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
     volumes:
-      - ./apps/web:/app
-      - /app/node_modules
-      - /app/.next
-    networks:
-      - crm-network
-    command: npm run dev
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
-
-networks:
-  crm-network:
-    driver: bridge

@@ -1,106 +1,65 @@
 #!/bin/bash
 
-# CRM Integration Platform Setup Script
+echo "=== Webhook & API Key Management Setup ==="
+echo ""
 
-echo "🚀 Setting up CRM Integration Platform..."
+echo "Checking prerequisites..."
 
-# Check if Node.js is installed
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 18+ first."
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 is not installed"
     exit 1
 fi
+echo "✓ Python 3 found"
 
-# Check Node.js version
-NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-    echo "❌ Node.js version 18+ is required. Current version: $(node -v)"
+if ! command -v pip &> /dev/null; then
+    echo "❌ pip is not installed"
     exit 1
 fi
+echo "✓ pip found"
 
-# Check if PostgreSQL is installed
-if ! command -v psql &> /dev/null; then
-    echo "⚠️  PostgreSQL is not installed. Please install PostgreSQL for the database."
-fi
+echo ""
+echo "Installing Python dependencies..."
+pip install -r requirements.txt
 
-# Check if Redis is installed
-if ! command -v redis-cli &> /dev/null; then
-    echo "⚠️  Redis is not installed. Please install Redis for the queue system."
-fi
-
-echo "✅ Prerequisites check completed"
-
-# Install dependencies
-echo "📦 Installing dependencies..."
-npm install
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to install dependencies"
-    exit 1
-fi
-
-# Setup API
-echo "🔧 Setting up API..."
-cd apps/api
-
-# Install API dependencies
-npm install
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to install API dependencies"
-    exit 1
-fi
-
-# Generate Prisma client
-echo "🗄️  Generating Prisma client..."
-npx prisma generate
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to generate Prisma client"
-    exit 1
-fi
-
-# Setup database (requires DATABASE_URL)
-if [ -z "$DATABASE_URL" ]; then
-    echo "⚠️  DATABASE_URL not set. Please configure it in apps/api/.env"
-    echo "   Example: DATABASE_URL=\"postgresql://username:password@localhost:5432/crm_integration\""
+echo ""
+echo "Checking environment variables..."
+if [ ! -f .env ]; then
+    echo "Creating .env file from template..."
+    cp .env.example .env
+    echo "⚠️  Please edit .env with your configuration"
 else
-    echo "🏗️  Setting up database..."
-    npx prisma db push
-
-    if [ $? -ne 0 ]; then
-        echo "❌ Failed to setup database. Please check your DATABASE_URL."
-        exit 1
-    fi
+    echo "✓ .env file exists"
 fi
 
-# Setup Web App
-echo "🎨 Setting up Web App..."
-cd ../web
-
-# Install web dependencies
-npm install
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to install web dependencies"
-    exit 1
+echo ""
+echo "Checking database connection..."
+if command -v docker &> /dev/null; then
+    echo "Docker found. Starting services..."
+    docker-compose up -d postgres redis
+    sleep 5
+    echo "✓ Database services started"
+else
+    echo "⚠️  Docker not found. Make sure PostgreSQL and Redis are running"
 fi
 
-cd ../..
+echo ""
+echo "Running database migrations..."
+alembic upgrade head
 
-echo "✅ Setup completed successfully!"
 echo ""
-echo "🎯 Next steps:"
-echo "1. Configure your environment variables:"
-echo "   - Copy apps/api/.env.example to apps/api/.env"
-echo "   - Copy apps/web/.env.local.example to apps/web/.env.local"
-echo "   - Update with your database, Redis, and CRM credentials"
+echo "Generating OpenAPI specification..."
+python scripts/generate_openapi.py
+
 echo ""
-echo "2. Start the development servers:"
-echo "   - API: npm run start:api (port 3001)"
-echo "   - Web: npm run start:web (port 3000)"
+echo "=== Setup Complete ==="
 echo ""
-echo "3. Access the application:"
-echo "   - Dashboard: http://localhost:3000"
-echo "   - API Health: http://localhost:3001/api/integrations/health"
+echo "Next steps:"
+echo "1. Review and update .env with your configuration"
+echo "2. Start the API server: make dev"
+echo "3. Start the worker: make worker (in another terminal)"
+echo "4. Visit http://localhost:8000/admin for the admin UI"
+echo "5. View API docs at http://localhost:8000/docs"
 echo ""
-echo "📚 For more information, see README.md"
+echo "For Docker deployment:"
+echo "  docker-compose up -d"
+echo ""
