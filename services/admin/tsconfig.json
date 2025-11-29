@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -15,18 +15,17 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "jsx": "preserve",
+    "incremental": true
   },
   "include": [
     "src/**/*",
-    "packages/**/*",
-    "services/**/*"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "build",
-    ".terraform"
+    ".next"
   ]
 }

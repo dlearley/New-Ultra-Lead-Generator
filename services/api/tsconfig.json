@@ -16,17 +16,15 @@
     "rootDir": "./src",
     "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "incremental": true
   },
   "include": [
-    "src/**/*",
-    "packages/**/*",
-    "services/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "build",
-    ".terraform"
+    "build"
   ]
 }
