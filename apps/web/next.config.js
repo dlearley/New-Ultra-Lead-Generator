@@ -1,12 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma']
+  reactStrictMode: true,
+  swcMinify: true,
+  typescript: {
+    tsconfigPath: './tsconfig.json',
   },
-  env: {
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-  }
-}
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.externals.push('pino-pretty', 'lokijs', 'encoding');
+    }
+    return config;
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

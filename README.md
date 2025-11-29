@@ -1,115 +1,422 @@
-# Local infrastructure stack
+# Map Territories, Alerts & Onboarding System
 
-This repository ships an opinionated Docker Compose stack that mirrors the services required for the Phase 2/Phase 3 applications: PostgreSQL (with pgvector), Redis with a BullMQ dashboard, OpenSearch, and optional S3-compatible storage via MinIO.
+A comprehensive full-stack application for managing territories, alerts, and organization onboarding with AI-powered scoring.
 
-## What's included
+## Features
 
-| Service | Image | Port(s) | Notes |
-| --- | --- | --- | --- |
-| PostgreSQL + pgvector | `pgvector/pgvector:pg16` | `5432` | Persistent volume `postgres_data` and health checks enabled |
-| Redis | `redis:7.2-alpine` | `6379` | Persists data under `redis_data` |
-| BullMQ dashboard | Custom Node service | `3002` | Basic-auth protected dashboard backed by Redis |
-| OpenSearch | `opensearchproject/opensearch:2.11.0` | `9200`, `9600` | Runs single node with security bootstrap password |
-| MinIO | `minio/minio:RELEASE.2024-05-10T01-41-38Z` | `9000`, `9001` | Optional file storage + automatic bucket bootstrap |
+### 🗺️ Territory Management (`/map`)
+- **Map-centric UI** with Leaflet for visualization
+- **Draw Tools**:
+  - Polygon drawing for custom territories
+  - Radius-based territories
+  - State and county pickers
+- **Heatmap Overlay** for lead distribution
+- **Territory Ownership**: Assign single or multiple users to territories
+- **Persistence**: All territories synced to PostgreSQL backend
 
-The stack attaches every service to the named `app-infra` bridge network and persists data with dedicated Docker volumes. Health checks ensure dependent services (for example the BullMQ dashboard) only start after their backing service is ready.
+### 🔔 Alert Manager (`/alerts`)
+- **Alert Creation**: Tie alerts to saved searches
+- **Delivery Channels**: Email and in-app notifications
+- **Alert Cadence**: Real-time, daily, weekly, or monthly
+- **Queue Jobs**: BullMQ integration for processing
+- **Run History**: Track alert executions and new lead counts
+- **Status Display**: Real-time monitoring of alert runs
 
-## Quick start
+### 🚀 Onboarding Wizard (`/onboarding`)
+- **Multi-step Setup**: Guided wizard for organization ICP capture
+- **Org ICP Fields**:
+  - Industries (Technology, Finance, Healthcare, etc.)
+  - Geographies (North America, Europe, Asia Pacific, etc.)
+  - Deal Sizes ($1M ranges)
+  - Personas (CEO, VP Sales, CFO, etc.)
+- **AI Scoring**: Automatic scoring based on ICP criteria
+- **Persistence**: Stored in database for future reference
 
-1. Copy the environment templates:
-   ```bash
-   cp .env.example .env
-   cp apps/web/.env.example apps/web/.env
-   cp apps/admin/.env.example apps/admin/.env
-   cp apps/api/.env.example apps/api/.env
-   ```
-2. (Optional) install pnpm locally so you can reuse the provided scripts: https://pnpm.io/installation.
-3. Bring the infrastructure online:
-   ```bash
-   pnpm docker:up
-   # or: make docker-up
-   ```
-4. Apply the Phase 2 migrations so PostgreSQL has the required schemas/extension:
-   ```bash
-   pnpm db:migrate:phase2
-   ```
-5. Seed the database with demo data:
-   ```bash
-   pnpm seed
-   ```
-6. (Optional) Start the Phase 3 connectors shim (keeps external credentials loaded and ready for your real connector processes):
-   ```bash
-   pnpm connectors:phase3
-   ```
-7. Point your web/admin/api apps at the stack using the `.env` files you created in step 1. The defaults assume the following URLs:
-   - Web: `http://localhost:3000`
-   - Admin: `http://localhost:3100`
-   - API: `http://localhost:4000`
+## Tech Stack
 
-To stop the infrastructure run `pnpm docker:down` (or `make docker-down`). Tail service logs with `pnpm docker:logs` or `make docker-logs`. There are additional scripts for service-specific logs, e.g. `pnpm docker:logs:postgres`.
+### Backend
+- **Framework**: NestJS 10
+- **Database**: PostgreSQL with TypeORM
+- **Job Queue**: BullMQ with Redis
+- **Validation**: class-validator & class-transformer
+- **Testing**: Jest & Supertest
 
-## Environment variables
+### Frontend
+- **Framework**: Next.js 15 with React 19
+- **State Management**: Zustand
+- **Maps**: Leaflet & react-leaflet
+- **Forms**: React Hook Form
+- **HTTP Client**: Axios
+- **E2E Testing**: Playwright
 
-- The root `.env` file contains shared infrastructure credentials (database, Redis, OpenSearch, MinIO, AI providers, and connector tokens).
-- Each application under `apps/*/.env.example` defines runtime configuration for that specific surface:
-  - **Web**: NextAuth secrets, OAuth client ids, public URLs, analytics keys.
-  - **Admin**: Admin portal port, JWT signing material, Okta/Google OAuth ids, storage configuration.
-  - **API**: Database/Redis/OpenSearch URLs, MinIO credentials, JWT keys, and connector tokens including OpenAI/Anthropic keys.
+## Project Structure
 
-Update these files with project-specific values before copying them to `.env`.
-
-## Phase 2 migrations
-
-SQL files live under `scripts/migrations/phase-2/`. The helper script `scripts/migrations/phase-2/apply.sh` (invoked via `pnpm db:migrate:phase2`) iterates over every `.sql` file in order and applies it to the database specified by `POSTGRES_URL`/`DATABASE_URL`. It automatically sources the root `.env` (override with `ENV_FILE=...`) and requires the `psql` CLI that ships with PostgreSQL (`brew install postgresql`, `apt install postgresql-client`, etc.). The default migration enables the `vector` + `pgcrypto` extensions, creates the `app_public` schema, and defines a `documents` table with an IVFFlat index ready for pgvector searches.
-
-If you add additional migrations, drop them in this folder with a lexical prefix (e.g., `0002_add_users.sql`) so they run deterministically.
-
-## Phase 3 connectors
-
-The `connectors/phase-3` directory contains a lightweight runner that validates external credentials and keeps a heartbeat loop active. Replace `runner.mjs` with the real connector orchestration from Phase 3, but keep the `run.sh` contract intact so `pnpm connectors:phase3` (or `make connectors-phase3`) continues to work for the team. The script automatically sources the root `.env` (override with `ENV_FILE=...`) so the same credentials drive Docker and the connectors.
-
-Environment variables required by this runner are already listed inside `.env.example` and the per-app files. Set them before starting the script.
-
-## Demo Data Seeding
-
-The repository includes comprehensive seed scripts to populate your database with realistic demo data across all entities:
-
-```bash
-# Seed database with demo data (idempotent)
-pnpm seed
-
-# Reset and reseed (clean slate)
-pnpm seed:reset
+```
+.
+├── apps/
+│   ├── backend/
+│   │   ├── src/
+│   │   │   ├── database/
+│   │   │   │   └── entities/          # TypeORM entities
+│   │   │   ├── modules/
+│   │   │   │   ├── territories/
+│   │   │   │   ├── alerts/
+│   │   │   │   └── onboarding/
+│   │   │   ├── common/
+│   │   │   │   └── dtos/              # Data Transfer Objects
+│   │   │   ├── app.module.ts
+│   │   │   └── main.ts
+│   │   └── test/
+│   │       ├── territories.e2e-spec.ts
+│   │       ├── alerts.e2e-spec.ts
+│   │       └── onboarding.e2e-spec.ts
+│   └── web/
+│       ├── src/
+│       │   ├── pages/
+│       │   │   ├── map/
+│       │   │   ├── alerts/
+│       │   │   └── onboarding/
+│       │   ├── components/
+│       │   │   ├── territories/
+│       │   │   ├── alerts/
+│       │   │   └── onboarding/
+│       │   ├── stores/                # Zustand stores
+│       │   ├── lib/
+│       │   │   └── api.ts
+│       │   └── styles/
+│       └── tests/e2e/
+│           ├── territories.spec.ts
+│           ├── alerts.spec.ts
+│           └── onboarding.spec.ts
+├── package.json
+├── turbo.json
+└── README.md
 ```
 
-The seed data includes:
-- **10 diverse industries**: Dental, HVAC, Trucking, Plumbing, Roofing, Landscaping, Real Estate, Legal, Medical, Automotive
-- **35+ US cities** across all regions (Northeast, Southeast, Midwest, Southwest, West)
-- **pgvector embeddings**: 1536-dimension vectors for similarity search
-- **OpenSearch indexing**: Full-text and geo-spatial search
-- **Complete relationships**: Organizations, users, businesses, contacts, social profiles, lead lists, saved searches, alerts, and ICP configs
+## Getting Started
 
-See [docs/SEEDING.md](docs/SEEDING.md) for complete documentation, configuration options, and dataset details.
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 7+
 
-## Helpful commands
+### Installation
 
-| Command | Description |
-| --- | --- |
-| `pnpm docker:up` / `make docker-up` | Build and start all services with health checks |
-| `pnpm docker:down` / `make docker-down` | Stop and remove containers, networks, and volumes |
-| `pnpm docker:logs` | Tail combined logs for the stack |
-| `pnpm docker:logs:<service>` | Tail logs for a single service (postgres, redis, opensearch, minio) |
-| `pnpm db:migrate:phase2` | Apply SQL migrations from `scripts/migrations/phase-2` |
-| `pnpm seed` | Seed database with comprehensive demo data |
-| `pnpm seed:reset` | Reset database and reseed with fresh data |
-| `pnpm connectors:phase3` | Boot the Phase 3 connector runner |
+1. **Install dependencies**:
+```bash
+pnpm install
+```
 
-After the stack is running and migrations/connectors are loaded, your apps can use their `.env` files to connect to:
+2. **Setup environment variables**:
+```bash
+# Backend
+cp apps/backend/.env.example apps/backend/.env
 
-- PostgreSQL: `postgresql://postgres:postgres@localhost:5432/app_db`
-- Redis: `redis://:redislocal@localhost:6379`
-- BullMQ dashboard: `http://localhost:3002` (ops / super-secret)
-- OpenSearch: `http://localhost:9200` (admin / admin)
-- MinIO: `http://localhost:9000` (minio / minio123)
+# Frontend
+cp apps/web/.env.example apps/web/.env
+```
 
-Feel free to customize credentials in `.env` and re-run `pnpm docker:up` to recreate the stack with your own values.
+3. **Configure database** (in `apps/backend/.env`):
+```env
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=map_alerts
+```
+
+### Running the Application
+
+**Development mode** (both backend and frontend):
+```bash
+pnpm dev
+```
+
+This will start:
+- Backend API: http://localhost:3001
+- Frontend: http://localhost:3000
+
+**Production build**:
+```bash
+pnpm build
+```
+
+### API Endpoints
+
+#### Territories
+- `POST /api/territories` - Create territory
+- `GET /api/territories` - List territories
+- `GET /api/territories/:id` - Get territory
+- `PUT /api/territories/:id` - Update territory
+- `DELETE /api/territories/:id` - Delete territory
+- `PUT /api/territories/:id/assign-owner` - Assign owner
+- `PUT /api/territories/:id/assign-owners` - Assign multiple owners
+
+#### Alerts
+- `POST /api/alerts` - Create alert
+- `GET /api/alerts` - List alerts
+- `GET /api/alerts/:id` - Get alert
+- `PUT /api/alerts/:id` - Update alert
+- `DELETE /api/alerts/:id` - Delete alert
+- `POST /api/alerts/:id/trigger` - Trigger alert run
+- `GET /api/alerts/:id/runs` - Get alert runs
+- `GET /api/alerts/:alertId/runs/:runId` - Get run status
+
+#### Onboarding
+- `GET /api/onboarding` - Get or create onboarding data
+- `PUT /api/onboarding/icp` - Update OrgICP
+- `POST /api/onboarding/complete` - Complete onboarding
+
+## Testing
+
+### Backend Tests
+```bash
+cd apps/backend
+
+# Unit & integration tests
+pnpm test
+
+# E2E tests
+pnpm test:e2e
+```
+
+### Frontend E2E Tests
+```bash
+cd apps/web
+
+# Run E2E tests
+pnpm test:e2e
+
+# Run E2E tests with UI
+pnpm test:e2e --ui
+```
+
+## Database Schema
+
+### Territories
+- `id` (UUID)
+- `organizationId` (UUID)
+- `name` (String)
+- `type` (Enum: polygon, radius, state, county)
+- `polygonCoordinates` (JSONB)
+- `radiusGeometry` (JSONB)
+- `stateCode` (String)
+- `countyCode` (String)
+- `ownerId` (UUID)
+- `ownerIds` (Array<UUID>)
+- `isActive` (Boolean)
+- Timestamps
+
+### Alerts
+- `id` (UUID)
+- `organizationId` (UUID)
+- `name` (String)
+- `description` (String)
+- `territoryId` (UUID)
+- `savedSearch` (JSONB)
+- `cadence` (Enum)
+- `deliveryChannels` (Array)
+- `recipients` (Array<String>)
+- `isActive` (Boolean)
+- `lastRunAt` (DateTime)
+- Timestamps
+
+### Alert Runs
+- `id` (UUID)
+- `alertId` (UUID)
+- `status` (Enum: pending, running, success, failed)
+- `newLeadsCount` (Integer)
+- `queueJobId` (String)
+- `errorMessage` (String)
+- `completedAt` (DateTime)
+- Timestamps
+
+### Onboarding Data
+- `id` (UUID)
+- `organizationId` (UUID)
+- `orgICP` (JSONB): industries, geographies, dealSizes, personas, aiScoring
+- `isCompleted` (Boolean)
+- `completedAt` (DateTime)
+- Timestamps
+
+## Features Breakdown
+
+### Territory Map View
+- Interactive Leaflet map with OSM tiles
+- Territory markers with info popups
+- Sidebar with territory list and form
+- Heatmap layer for lead distribution visualization
+- Draw tools for creating polygons/radius territories
+- State/county selector for administrative boundaries
+
+### Alert Management
+- Create alerts tied to saved searches
+- Configure delivery channels (email, in-app)
+- Set alert cadence (real-time, daily, weekly, monthly)
+- Trigger alerts manually or via scheduler
+- BullMQ jobs process alerts asynchronously
+- Track new lead counts per alert run
+- Display run history with status and error messages
+
+### Onboarding Wizard
+- 4-step guided setup process
+- Multi-select for industries, geographies, deal sizes, personas
+- Progress tracking and navigation
+- AI scoring calculates based on ICP factors
+- Completion status and timestamp tracking
+
+## API Response Examples
+
+### Create Territory
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "organizationId": "org-123",
+  "name": "California Territory",
+  "type": "state",
+  "stateCode": "CA",
+  "ownerId": "user-456",
+  "isActive": true,
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Create Alert
+```json
+{
+  "id": "alert-123",
+  "organizationId": "org-123",
+  "name": "CA Tech Companies",
+  "territoryId": "territory-123",
+  "cadence": "daily",
+  "deliveryChannels": ["email", "in_app"],
+  "lastRunAt": null,
+  "isActive": true
+}
+```
+
+### Trigger Alert (creates run)
+```json
+{
+  "id": "run-123",
+  "alertId": "alert-123",
+  "status": "pending",
+  "newLeadsCount": 0,
+  "queueJobId": "job-456",
+  "createdAt": "2024-01-15T11:00:00Z"
+}
+```
+
+### Complete Onboarding
+```json
+{
+  "id": "onboarding-123",
+  "organizationId": "org-123",
+  "orgICP": {
+    "industries": ["Technology", "Finance"],
+    "geographies": ["North America", "Europe"],
+    "dealSizes": ["$1M-$5M", "$5M-$10M"],
+    "personas": ["CEO", "VP Sales", "CFO"],
+    "aiScoring": {
+      "score": 78,
+      "updatedAt": "2024-01-15T12:00:00Z",
+      "factors": {
+        "industryScore": 60,
+        "geoScore": 75,
+        "dealSizeScore": 80,
+        "personaScore": 100
+      }
+    }
+  },
+  "isCompleted": true,
+  "completedAt": "2024-01-15T12:00:00Z"
+}
+```
+
+## Development Workflow
+
+1. **Start development servers**:
+```bash
+pnpm dev
+```
+
+2. **Make changes** to backend or frontend
+
+3. **Run tests** to verify:
+```bash
+# Backend
+cd apps/backend && pnpm test:e2e
+
+# Frontend
+cd apps/web && pnpm test:e2e
+```
+
+4. **Lint and format**:
+```bash
+pnpm lint
+pnpm format
+```
+
+5. **Build for production**:
+```bash
+pnpm build
+```
+
+## Deployment
+
+### Docker Compose Setup
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: map_alerts
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./apps/backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_HOST: postgres
+      REDIS_HOST: redis
+
+  frontend:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+```
+
+## Acceptance Criteria
+
+✅ **Territories persist to backend**: All territories are stored in PostgreSQL and synced  
+✅ **Alerts trigger queue jobs**: BullMQ processes alert runs  
+✅ **Alert status display**: Run history shows status, leads count, timestamps  
+✅ **Onboarding updates OrgICP**: Schema stores industries, geos, deal size, personas  
+✅ **E2E tests cover each flow**: Territory, alert, and onboarding E2E tests included  
+
+## License
+
+Proprietary - All rights reserved
+
+## Support
+
+For issues or questions, please refer to the documentation or contact the development team.
