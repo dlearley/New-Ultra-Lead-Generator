@@ -12,7 +12,7 @@ export default function Home() {
         </h1>
         <p className="mt-6 text-lg text-zinc-600 dark:text-zinc-300">
           Use the AI-assisted search experience to mix natural language queries with structured filters,
-          visualize prospects on a live map, and take action with one click.
+          visualize prospects on a live map, manage lead lists, and maintain data quality with powerful tools.
         </p>
         <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
           <Link
@@ -22,10 +22,16 @@ export default function Home() {
             Launch Search Workspace
           </Link>
           <Link
-            href="/search"
+            href="/lists"
             className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-base font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
           >
-            View Saved Searches
+            Manage Lead Lists
+          </Link>
+          <Link
+            href="/data-tools"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-base font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
+          >
+            Data Tools
           </Link>
         </div>
       </div>
