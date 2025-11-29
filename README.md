@@ -1,242 +1,238 @@
-# Enterprise Monorepo
+# Auth SSO MFA System
 
-![CI Pipeline](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg)
-![Lint Status](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg?label=lint)
-![Test Status](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg?label=tests)
-![Build Status](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg?label=build)
+A comprehensive authentication system with SSO, MFA, and session management built with Next.js, NextAuth, Prisma, and PostgreSQL.
 
-> **Note**: Replace `[owner]` and `[repo]` in badge URLs with your actual GitHub repository details
+## Features
 
-A modern, scalable monorepo with pnpm and Turborepo, featuring:
+### Authentication Methods
+- **Email & Password**: Traditional credentials-based authentication
+- **SSO Providers**: Google, Microsoft, LinkedIn OAuth integration
+- **Multi-Factor Authentication (MFA)**:
+  - TOTP (Time-based One-Time Password) using authenticator apps
+  - SMS verification (via Twilio)
+  - Email verification
+  - Backup codes for account recovery
 
-- **Web App**: Next.js 15 (React 18)
-- **Admin Dashboard**: Next.js 15 (React 18)
-- **API Server**: NestJS
-- **Shared Packages**: UI components, Core utilities
+### Session Management
+- JWT-based session strategy with refresh token rotation
+- Device tracking and management
+- Active session listing with device information
+- Session revocation capabilities
+- Redis-ready architecture for scalability
 
-## Architecture
-
-```
-apps/
-├── web/          # Next.js web application
-├── admin/        # Next.js admin dashboard
-└── api/          # NestJS REST API
-
-packages/
-├── ui/           # Shared React UI components
-└── core/         # Shared utilities and types
-```
-
-## Prerequisites
-
-- Node.js >= 20.0.0
-- pnpm >= 9.0.0
-- Docker & Docker Compose (for local services)
-
-## Getting Started
-
-### Install Dependencies
-
-```bash
-pnpm install
-```
-
-### Development
-
-Run all applications in development mode:
-
-```bash
-pnpm dev
-```
-
-Individual app development:
-
-```bash
-pnpm --filter @monorepo/web dev
-pnpm --filter @monorepo/admin dev
-pnpm --filter @monorepo/api dev
-```
-
-### Building
-
-Build all applications:
-
-```bash
-pnpm build
-```
-
-Build specific app:
-
-```bash
-pnpm --filter @monorepo/web build
-```
+### Security Features
+- Password strength validation
+- Secure password hashing with bcrypt
+- MFA enforcement toggles
+- Session timeout management
+- Device fingerprinting
 
 ### Testing
+- Comprehensive unit and integration tests
+- Authentication flow testing
+- MFA challenge verification testing
+- Session management testing
+- API endpoint testing
 
-Run all tests:
+## Project Structure
 
-```bash
-pnpm test
+```
+apps/web/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/auth/          # API routes
+│   │   ├── auth/              # Auth pages
+│   │   └── globals.css
+│   ├── components/
+│   │   └── providers/
+│   ├── lib/
+│   │   └── auth/              # Authentication utilities
+│   └── __tests__/             # Test files
+├── prisma/
+│   └── schema.prisma          # Database schema
+└── package.json
 ```
 
-Run tests with coverage:
+## Setup Instructions
 
+### 1. Environment Setup
+
+Copy the environment template:
 ```bash
-pnpm test:coverage
+cp apps/web/.env.example apps/web/.env.local
 ```
 
-Run tests for specific app:
+Configure the following environment variables:
 
-```bash
-pnpm --filter @monorepo/web test
+#### Database
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/auth_db"
 ```
 
-### Linting
-
-Lint all code:
-
-```bash
-pnpm lint
+#### NextAuth
+```env
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"
 ```
 
-Lint specific app:
+#### OAuth Providers
+```env
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-```bash
-pnpm --filter @monorepo/web lint
+MICROSOFT_CLIENT_ID="your-microsoft-client-id"
+MICROSOFT_CLIENT_SECRET="your-microsoft-client-secret"
+
+LINKEDIN_CLIENT_ID="your-linkedin-client-id"
+LINKEDIN_CLIENT_SECRET="your-linkedin-client-secret"
 ```
 
-### Type Checking
-
-Check types across the monorepo:
-
-```bash
-pnpm type-check
+#### Redis (for session storage)
+```env
+REDIS_URL="redis://localhost:6379"
 ```
 
-### Code Formatting
-
-Format code with Prettier:
-
-```bash
-pnpm format
+#### Email (for password reset and email MFA)
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER="your-email@gmail.com"
+SMTP_PASSWORD="your-app-password"
 ```
 
-Check formatting:
-
-```bash
-pnpm format:check
+#### SMS (Twilio for SMS MFA)
+```env
+TWILIO_ACCOUNT_SID="your-twilio-account-sid"
+TWILIO_AUTH_TOKEN="your-twilio-auth-token"
+TWILIO_PHONE_NUMBER="+1234567890"
 ```
 
-## Services
-
-The project includes Docker Compose for local development services:
-
-### Running Services
-
-```bash
-docker-compose up -d
+#### App Settings
+```env
+APP_NAME="Auth SSO MFA"
+APP_URL="http://localhost:3000"
 ```
 
-### Services Included
+### 2. Database Setup
 
-- **PostgreSQL 16** with pgvector extension
-- **Redis 7.2** for caching and message queues
-- **OpenSearch 2.11** for search functionality
-- **MinIO** for S3-compatible object storage
-- **BullMQ Dashboard** for job queue monitoring
-
-### Service Ports
-
-- PostgreSQL: 5432
-- Redis: 6379
-- OpenSearch: 9200, 9600
-- MinIO: 9000 (API), 9001 (Console)
-- BullMQ Dashboard: 3002
-
-### Connection Details
-
-See `.env.example` or `.env` for service credentials and configuration.
-
-## CI/CD Pipeline
-
-The CI pipeline runs on every push and pull request to `main` and `develop` branches.
-
-### Pipeline Stages
-
-1. **Setup**: Matrix configuration for apps and Node versions
-2. **Services**: PostgreSQL, Redis, OpenSearch, MinIO containers
-3. **Lint**: ESLint checks across all apps
-4. **Type Check**: TypeScript compilation checks
-5. **Test**: Unit and integration tests with coverage
-6. **Build**: Build production bundles
-7. **E2E**: Playwright E2E tests (web app)
-8. **Deploy**: Tag-based deployment stubs (AWS ECS, Fly.io)
-
-### Coverage Reports
-
-Coverage reports are automatically posted to pull requests showing:
-
-- Statement coverage percentage
-- Branch coverage percentage
-- Function coverage percentage
-- Line coverage percentage
-
-### Deployment
-
-Deployment is triggered on version tags (`v*`):
-
-- **AWS ECS**: Placeholder for AWS deployment
-- **Fly.io**: Placeholder for Fly.io deployment
-
-## Environment Variables
-
-See `.env.example` for required environment variables. Copy to `.env` for local development.
-
+Install Prisma CLI and generate the database schema:
 ```bash
-cp .env.example .env
+cd apps/web
+npm install
+npx prisma generate
+npx prisma db push
 ```
 
-## Package Manager
+### 3. Install Dependencies
 
-This project uses **pnpm** for package management. Install it globally:
-
+From the root directory:
 ```bash
-npm install -g pnpm@9.1.3
+npm install
 ```
 
-## Troubleshooting
-
-### Clear all cache and reinstall
+### 4. Run the Application
 
 ```bash
-pnpm clean
-pnpm install
+npm run dev
 ```
 
-### Reset node_modules and lockfile
+The application will be available at `http://localhost:3000`.
 
+## Usage
+
+### Registration and Login
+1. Navigate to `/auth/signup` to create a new account
+2. Use `/auth/signin` to log in with credentials or OAuth providers
+3. If MFA is enabled, you'll be prompted for verification
+
+### MFA Setup
+1. After logging in, visit `/auth/mfa`
+2. Click "Enable MFA" to generate a TOTP secret
+3. Scan the QR code with your authenticator app
+4. Enter the verification code to enable MFA
+5. Save the backup codes securely
+
+### Session Management
+1. Visit `/auth/sessions` to view active sessions
+2. Revoke individual sessions or all other sessions
+3. View device information and last access times
+
+### OAuth Provider Setup
+
+#### Google
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+
+#### Microsoft
+1. Go to [Azure Portal](https://portal.azure.com/)
+2. Register a new application
+3. Add redirect URI: `http://localhost:3000/api/auth/callback/microsoft`
+4. Grant delegated permissions for user profile
+
+#### LinkedIn
+1. Go to [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
+2. Create a new application
+3. Add redirect URI: `http://localhost:3000/api/auth/callback/linkedin`
+4. Request r_liteprofile and r_emailaddress permissions
+
+## Testing
+
+Run the test suite:
 ```bash
-rm -rf node_modules
-pnpm install
+cd apps/web
+npm test
 ```
 
-### Docker services not starting
-
-Check ports are available and no conflicting services:
-
+Run tests in watch mode:
 ```bash
-docker-compose down
-docker-compose up -d
+npm run test:watch
 ```
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/[...nextauth]` - NextAuth endpoints
+- `POST /api/auth/refresh` - Token refresh
+- `POST /api/auth/mfa-challenge` - MFA challenge handling
+
+### MFA Management
+- `POST /api/auth/mfa` - Enable/disable MFA
+
+### Session Management
+- `GET /api/auth/sessions` - Get user sessions
+- `DELETE /api/auth/sessions` - Revoke sessions
+
+## Security Considerations
+
+1. **Environment Variables**: Never commit `.env.local` to version control
+2. **Database Security**: Use connection pooling and SSL
+3. **Session Security**: Implement proper token rotation and expiration
+4. **MFA Backup Codes**: Store backup codes securely
+5. **Rate Limiting**: Implement rate limiting on auth endpoints
+6. **HTTPS**: Always use HTTPS in production
+
+## Production Deployment
+
+1. **Database**: Use a managed PostgreSQL service
+2. **Redis**: Use a managed Redis service for session storage
+3. **Environment**: Configure all required environment variables
+4. **Domain**: Update `NEXTAUTH_URL` to your production domain
+5. **SSL**: Ensure SSL certificates are properly configured
+6. **Monitoring**: Set up logging and monitoring for auth events
 
 ## Contributing
 
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make your changes
-3. Run tests and linting: `pnpm lint && pnpm test`
-4. Commit with conventional commit messages
-5. Create a pull request
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Run the test suite
+6. Submit a pull request
 
 ## License
 
-MIT
+This project is licensed under the MIT License.
