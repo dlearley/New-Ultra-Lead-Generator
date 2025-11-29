@@ -1,52 +1,34 @@
-# Dependencies
-node_modules
-pnpm-lock.yaml
-.pnpm-lock.yaml
-
-# Build outputs
-dist
-build
-.next
-.turbo
-out
-
-# Runtime data
-*.log
-*.pid
-*.seed
-.DS_Store
-
-# Environment variables
+# Environment files
 .env
 .env.local
-.env.*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+apps/*/.env
+apps/*/.env.local
+apps/*/.env.development
+apps/*/.env.production
+!apps/*/.env.example
+scripts/**/dist
 
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Node modules and build artifacts
+node_modules
+.pnp.cjs
+.pnp.loader.mjs
+.pnpm-store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.dist
+build
+dist
+coverage
 
-# OS
+# Editor and OS files
 .DS_Store
 Thumbs.db
-
-# Testing
-coverage
-.nyc_output
-
-# Cache
-.eslintcache
-.prettier-ignore-cache
-.turbo
-
-# Temporary
-tmp
-temp
+.idea
+.vscode
+*.swp
