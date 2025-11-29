@@ -1,361 +1,346 @@
-# Multi-Service Application
+# Engine Labs API - Search Module
 
-A comprehensive multi-service application with CI/CD pipeline, containerization, and infrastructure as code.
+Phase 4 Part 2: Business Search API with OpenSearch and PostgreSQL integration.
 
-## Architecture Overview
+## Features
 
-This application consists of three main services:
-- **Web Service**: Next.js frontend application (port 3000)
-- **Admin Service**: Next.js admin panel (port 3001)  
-- **API Service**: Express.js backend API (port 3002)
+- **Full-text Search**: Keyword search with fuzzy matching support
+- **Geo Distance Filtering**: Search by coordinates or address with distance radius
+- **Multi-Filter Combinations**: Filter by industry, location, revenue, employees, hiring, tech stack
+- **Aggregations/Facets**: Get breakdowns by industry, geography, revenue ranges, hiring levels, and tech stack
+- **Pagination & Sorting**: Skip/take pagination with multiple sort options (relevance, name, revenue, employees, distance, created date)
+- **Saved Searches**: CRUD operations for storing search queries with user/organization metadata
+- **"Did You Mean" Suggestions**: Smart query suggestions based on search results
 
-## Infrastructure Components
+## Project Structure
 
-- **ECS Fargate**: Container orchestration for all services
-- **RDS PostgreSQL**: Primary database
-- **OpenSearch**: Search and analytics engine
-- **S3**: Object storage for assets, uploads, and backups
-- **ElastiCache Redis**: Caching layer
-- **Application Load Balancer**: Traffic distribution and SSL termination
-- **CloudWatch**: Monitoring and logging
-- **Secrets Manager**: Secure credential storage
+```
+src/
+├── api/
+│   ├── search/
+│   │   ├── search.controller.ts       # Search API endpoints
+│   │   ├── search.service.ts          # Search business logic
+│   │   ├── opensearch.service.ts      # OpenSearch integration
+│   │   ├── search.module.ts           # Search module
+│   │   └── query-builder.spec.ts      # Unit tests
+│   └── saved-search/
+│       ├── saved-search.controller.ts # Saved search CRUD endpoints
+│       ├── saved-search.service.ts    # Saved search business logic
+│       └── saved-search.module.ts     # Saved search module
+├── common/
+│   ├── dtos/
+│   │   ├── business-search.input.ts   # Search input DTO with validation
+│   │   ├── search-response.dto.ts     # Search response structure
+│   │   └── saved-search.dto.ts        # Saved search DTOs
+│   └── services/
+│       └── geocoding.service.ts       # Address-to-coordinates conversion
+├── database/
+│   ├── entities/
+│   │   ├── business.entity.ts         # Business entity
+│   │   └── saved-search.entity.ts     # Saved search entity
+│   ├── data-source.ts                 # TypeORM data source
+│   └── database.module.ts             # Database module
+└── main.ts                            # Application entry point
 
-## Quick Start
+tests/
+└── e2e/
+    └── search-api.spec.ts             # Playwright contract tests
+```
 
-### Prerequisites
+## API Endpoints
 
-- Node.js 18+
-- Docker
-- AWS CLI configured with appropriate permissions
-- Terraform 1.0+
+### Search Businesses
 
-### Local Development
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Start development servers:**
-   ```bash
-   npm run dev
-   ```
-
-3. **Run tests:**
-   ```bash
-   npm test
-   ```
-
-4. **Build services:**
-   ```bash
-   npm run build
-   ```
-
-### Docker Development
-
-1. **Build all images:**
-   ```bash
-   npm run docker:build
-   ```
-
-2. **Build individual service:**
-   ```bash
-   npm run docker:build:web
-   npm run docker:build:admin
-   npm run docker:build:api
-   ```
-
-## CI/CD Pipeline
-
-### Workflow Triggers
-
-- **Push to main/develop**: Runs linting, testing, and builds
-- **Pull requests**: Full validation including integration tests
-- **Tags/Releases**: Builds Docker images, pushes to registry, and deploys infrastructure
-
-### Pipeline Stages
-
-1. **Matrix Testing**: Parallel lint/test/build for each service
-2. **Integration Tests**: Database and search service integration
-3. **Docker Build**: Multi-stage builds for production images
-4. **Infrastructure Validation**: Terraform validation and planning
-5. **Deployment**: Automated deployment to ECS
-6. **Security Scanning**: Vulnerability scanning with Trivy
-
-### Environment Variables
-
-#### Required for API Service
 ```bash
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=password
-DB_NAME=multiservice
+POST /api/search/businesses
+Content-Type: application/json
 
-# Search
-OPENSEARCH_URL=http://localhost:9200
-
-# Cache
-REDIS_URL=redis://localhost:6379
-
-# Application
-NODE_ENV=production
-PORT=3002
+{
+  "query": "tech company",
+  "industry": "Technology",
+  "location": "San Francisco",
+  "geoLocation": {
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "distanceKm": 50
+  },
+  "minRevenue": 1000000,
+  "maxRevenue": 10000000,
+  "minEmployees": 10,
+  "maxEmployees": 500,
+  "minHiring": 5,
+  "maxHiring": 100,
+  "techStack": ["JavaScript", "React"],
+  "sortBy": "relevance",
+  "sortOrder": "desc",
+  "skip": 0,
+  "take": 20,
+  "fuzzyMatching": "high"
+}
 ```
 
-#### Required for Web/Admin Services
-```bash
-NODE_ENV=production
-PORT=3000  # or 3001 for admin
-```
-
-## Infrastructure as Code
-
-### Terraform Structure
-
-```
-infrastructure/
-├── main.tf                 # Root configuration
-├── modules/
-│   ├── ecs/               # ECS cluster and services
-│   ├── rds/               # PostgreSQL database
-│   ├── opensearch/        # Search cluster
-│   ├── s3/                # Storage buckets
-│   └── monitoring/        # CloudWatch alarms and dashboards
-```
-
-### Deployment Commands
-
-1. **Initialize Terraform:**
-   ```bash
-   cd infrastructure
-   terraform init
-   ```
-
-2. **Plan deployment:**
-   ```bash
-   terraform plan -out=tfplan
-   ```
-
-3. **Apply changes:**
-   ```bash
-   terraform apply tfplan
-   ```
-
-4. **Destroy infrastructure:**
-   ```bash
-   terraform destroy
-   ```
-
-## Database Management
-
-### Running Migrations
-
-1. **Run all pending migrations:**
-   ```bash
-   npm run migration:run
-   ```
-
-2. **Revert last migration:**
-   ```bash
-   npm run migration:revert
-   ```
-
-3. **Generate new migration:**
-   ```bash
-   npm run migration:generate -- MigrationName
-   ```
-
-### Search Index Management
-
-1. **Create search index:**
-   ```bash
-   npm run search:index
-   ```
-
-## Health Checks
-
-### Service Endpoints
-
-- **Web Service**: `GET /`
-- **Admin Service**: `GET /`
-- **API Service**: `GET /api/health`
-
-### Health Check Response Format
-
+**Response:**
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2023-11-20T19:44:00.000Z",
-  "services": {
-    "database": "connected",
-    "search": "connected"
+  "results": [
+    {
+      "id": "uuid",
+      "name": "Tech Company Inc",
+      "description": "Leading technology company",
+      "industry": "Technology",
+      "location": "San Francisco",
+      "latitude": 37.7749,
+      "longitude": -122.4194,
+      "revenue": 5000000,
+      "employees": 150,
+      "hiring": 25,
+      "techStack": ["JavaScript", "React", "Node.js"],
+      "score": 0.95
+    }
+  ],
+  "total": 42,
+  "skip": 0,
+  "take": 20,
+  "aggregations": {
+    "industry": [
+      { "name": "Technology", "count": 30, "value": "Technology" },
+      { "name": "Finance", "count": 12, "value": "Finance" }
+    ],
+    "location": [...],
+    "techStack": [...],
+    "revenueRanges": [...],
+    "hiringLevels": [...]
+  },
+  "suggestions": [
+    { "text": "Tech Company Inc", "score": 0.95 },
+    { "text": "Tech Solutions LLC", "score": 0.87 }
+  ]
+}
+```
+
+### Saved Searches
+
+#### Create Saved Search
+```bash
+POST /api/saved-searches
+Content-Type: application/json
+
+{
+  "name": "Tech Companies in SF",
+  "description": "Search for tech companies",
+  "userId": "user-uuid",
+  "organizationId": "org-uuid",
+  "query": {
+    "query": "tech",
+    "industry": "Technology",
+    "geoLocation": {
+      "latitude": 37.7749,
+      "longitude": -122.4194,
+      "distanceKm": 50
+    }
+  },
+  "filters": {
+    "minRevenue": 1000000,
+    "maxRevenue": 10000000
   }
 }
 ```
 
-## Monitoring and Alerting
+#### List Saved Searches
+```bash
+GET /api/saved-searches?userId=user-uuid&organizationId=org-uuid&skip=0&take=20
+```
 
-### CloudWatch Dashboards
+#### Get Single Saved Search
+```bash
+GET /api/saved-searches/{id}
+```
 
-- **Application Dashboard**: ECS, RDS, and OpenSearch metrics
-- **Infrastructure Dashboard**: VPC, ALB, and resource utilization
+#### Update Saved Search
+```bash
+PUT /api/saved-searches/{id}
+Content-Type: application/json
 
-### Alert Types
+{
+  "name": "Updated Name",
+  "description": "Updated description",
+  "query": { ... },
+  "filters": { ... }
+}
+```
 
-- **High CPU/Memory**: ECS services, RDS, OpenSearch
-- **Low Storage**: RDS free storage space
-- **High Connections**: RDS connection count
-- **Service Errors**: ALB 5XX error rates
-- **Cluster Status**: OpenSearch cluster health
+#### Delete Saved Search
+```bash
+DELETE /api/saved-searches/{id}
+```
 
-### Log Groups
+## Setup and Installation
 
-- `/aws/ec2/{project}-{env}-application`: Application logs
-- `/aws/ecs/{project}-{env}`: Container logs
-- `/aws/rds/instance/{db-identifier}`: Database logs
-- `/aws/opensearch/{domain}`: Search service logs
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 12+
+- OpenSearch 2.0+
+
+### Installation
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Create `.env` file:
+```bash
+cp .env.example .env
+```
+
+3. Configure environment variables for your database and OpenSearch instance
+
+4. Run database migrations:
+```bash
+npm run build
+npm run db:migrate
+```
+
+## Development
+
+### Start Development Server
+```bash
+npm run start:dev
+```
+
+### Run Tests
+
+#### Unit Tests (Vitest)
+```bash
+npm run test:vitest
+npm run test:vitest:ui
+```
+
+#### E2E Tests (Playwright)
+```bash
+npm run test:pw
+```
+
+#### All Tests
+```bash
+npm test
+```
+
+### Code Quality
+
+#### Format Code
+```bash
+npm run format
+```
+
+#### Lint Code
+```bash
+npm run lint
+```
+
+## Query Builder Features
+
+The query builder supports:
+
+1. **Text Search**: Multi-field search with keyword matching
+2. **Fuzzy Matching**: Automatic fuzzy search for typo tolerance (fuzziness: AUTO)
+3. **Multi-Filter Combinations**: Boolean logic combining multiple filters
+4. **Geo Distance**: Haversine formula distance filtering
+5. **Range Filters**: Revenue, employees, hiring count ranges
+6. **Faceted Search**: Aggregations across multiple dimensions
+7. **Sorting**: Multiple sort fields with ASC/DESC ordering
+8. **Pagination**: Skip/take for efficient result chunking
+
+## Validation
+
+- Input DTOs use `class-validator` for comprehensive validation
+- All numeric inputs support min/max constraints
+- Enum validation for sort fields and sort orders
+- Array validation for multi-value filters
+
+## Error Handling
+
+- 404 Not Found: When saved search doesn't exist
+- 400 Bad Request: Validation errors on input
+- 500 Internal Server Error: Server errors logged with context
+
+## Database Schema
+
+### businesses table
+```sql
+- id (UUID, Primary Key)
+- name (String, Required, Indexed)
+- description (Text)
+- industry (String, Indexed)
+- location (String, Indexed)
+- latitude (Decimal)
+- longitude (Decimal)
+- revenue (Integer)
+- employees (Integer)
+- hiring (Integer)
+- techStack (Array)
+- metadata (JSONB)
+- createdAt (Timestamp, Indexed)
+- updatedAt (Timestamp)
+```
+
+### saved_searches table
+```sql
+- id (UUID, Primary Key)
+- name (String, Required)
+- description (Text)
+- userId (UUID, Indexed)
+- organizationId (UUID, Indexed)
+- query (JSONB, Required)
+- filters (JSONB)
+- resultsCount (Integer)
+- createdAt (Timestamp, Indexed)
+- updatedAt (Timestamp)
+```
+
+## OpenSearch Mapping
+
+The `businesses` index uses:
+- Text fields with standard analyzer and keyword sub-fields
+- Geo-point fields for distance calculations
+- Keyword fields for exact matching
+- Integer fields for range queries
+- Custom tokenizers for autocomplete (if needed)
+
+## Testing
+
+### Unit Tests
+- Query builder validation
+- Filter combination logic
+- Range filter calculations
+- Pagination parameters
+
+### Playwright Contract Tests
+- Full API contract validation
+- Text search with various queries
+- Geo-distance filtering
+- Multi-filter combinations
+- Aggregation structure validation
+- Saved search CRUD operations
+- Pagination and sorting
+- "Did you mean" suggestions
+
+## Performance Considerations
+
+- Database indexes on frequently queried fields
+- OpenSearch indexing for fast full-text search
+- Pagination limits (max 100 results per page)
+- Aggregation bucketing with reasonable limits
+- Connection pooling for database
 
 ## Security
 
-### Container Security
-
-- Multi-stage Docker builds for minimal attack surface
-- Non-root user execution
-- Security scanning with Trivy
-- Image vulnerability assessment
-
-### Infrastructure Security
-
-- VPC with private subnets for services
-- Security groups with least privilege access
-- Encrypted storage (EBS, S3, RDS, OpenSearch)
-- KMS-managed encryption keys
-- IAM roles with minimal permissions
-
-### Secrets Management
-
-- AWS Systems Manager Parameter Store for configuration
-- SecureString type for sensitive data
-- Automatic rotation support
-- Audit logging for access
-
-## Rollback Strategy
-
-### Application Rollback
-
-1. **ECS Service Rollback:**
-   ```bash
-   aws ecs update-service \
-     --cluster production \
-     --service web-service \
-     --task-definition previous-task-definition
-   ```
-
-2. **Database Rollback:**
-   ```bash
-   npm run migration:revert
-   ```
-
-### Infrastructure Rollback
-
-1. **Terraform State Management:**
-   ```bash
-   terraform plan -out=rollback-plan -target=resource.to.rollback
-   terraform apply rollback-plan
-   ```
-
-2. **Version Control:**
-   - All infrastructure changes tracked in Git
-   - Semantic versioning for releases
-   - Branch protection for main branch
-
-## Troubleshooting
-
-### Common Issues
-
-#### Service Not Starting
-1. Check CloudWatch logs for the specific service
-2. Verify environment variables in ECS task definition
-3. Validate security group configurations
-4. Check resource limits (CPU/memory)
-
-#### Database Connection Issues
-1. Verify RDS instance is running
-2. Check security group allows traffic from ECS
-3. Validate connection parameters
-4. Review VPC routing configuration
-
-#### Search Index Issues
-1. Verify OpenSearch cluster is healthy
-2. Check index mappings and permissions
-3. Review authentication configuration
-4. Validate network connectivity
-
-### Debug Commands
-
-```bash
-# Check ECS service status
-aws ecs describe-services --cluster production --services web-service
-
-# View container logs
-aws logs tail /aws/ecs/production --follow
-
-# Check RDS instance status
-aws rds describe-db-instances --db-instance-identifier production-db
-
-# Verify OpenSearch domain health
-aws opensearch describe-domain --domain-name production-search
-```
-
-## Performance Optimization
-
-### Application Performance
-
-- Container resource limits based on usage patterns
-- Health checks with appropriate timeouts
-- Graceful shutdown handling
-- Connection pooling for database
-
-### Infrastructure Performance
-
-- Auto Scaling for ECS services based on metrics
-- RDS read replicas for read-heavy workloads
-- OpenSearch cluster configuration for search performance
-- CloudFront CDN for static assets
-
-## Backup and Disaster Recovery
-
-### Data Backups
-
-- **RDS**: Automated daily backups with 7-day retention
-- **S3**: Versioning enabled with lifecycle policies
-- **OpenSearch**: Automated snapshots to S3
-
-### Disaster Recovery
-
-- Multi-AZ deployment for high availability
-- Infrastructure as Code for quick recreation
-- Regular backup restoration testing
-- Documentation for recovery procedures
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-### Code Quality Standards
-
-- ESLint for code linting
-- Prettier for code formatting
-- TypeScript for type safety
-- Jest for unit testing
-- Integration tests for critical paths
+- Input validation on all DTOs
+- SQL injection prevention via TypeORM parameterized queries
+- OpenSearch query injection prevention via proper query building
+- CORS enabled (configurable)
+- Environment variable secrets management
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT
