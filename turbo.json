@@ -1,37 +1,23 @@
 {
-  "extends": ["//"],
-  "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": [
-    "**/.env",
-    "**/.env.local"
-  ],
-  "tasks": {
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.local", "**/.env"],
+  "pipeline": {
     "build": {
-      "outputs": [
-        "dist/",
-        ".next/"
-      ],
-      "dependsOn": [
-        "^build"
-      ]
-    },
-    "test": {
-      "outputs": [
-        "coverage/"
-      ]
-    },
-    "test:e2e": {
-      "cache": false
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "out/**"]
     },
     "lint": {
       "outputs": []
     },
+    "test": {
+      "outputs": ["coverage/**"]
+    },
     "type-check": {
       "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

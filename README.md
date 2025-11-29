@@ -1,257 +1,260 @@
-# Admin Data Sources Management System
+# Admin Billing & Audit Module (Phase 7 Part 3)
 
-Phase 7 Part 2 implementation for comprehensive data source management, feature flags, plans editor, data quality dashboard, and health monitoring.
+A comprehensive admin panel for managing billing, usage metrics, audit logs, and AI model configurations with RBAC support.
 
 ## Features
 
-### Data Source Management
-- Configure API keys with encrypted storage
-- Set rate limits per connector (minute/hour/day)
-- Enable/disable individual connectors
-- Real-time health monitoring
-- Support for API, Database, File, and Stream connectors
+### 1. Billing & Usage Module
+- Surface billing searches and filters per organization
+- Export billing data in JSON/CSV formats
+- Track usage alerts for organizations near API call limits
+- Mark organizations as trial/paid/delinquent
+- Visualize usage trends and spending patterns
+- Stub Stripe integration for payment processing
 
-### Feature Flags & Plans Editor
-- Define plan tiers (Basic, Pro, Enterprise, Custom)
-- Toggle features per tenant with overrides
-- Bulk operations for plan management
-- Clone existing plans
-- Real-time feature flag propagation
+### 2. Audit & Compliance Module
+- Searchable audit logs by organization, user, action, and date range
+- Export audit logs in JSON/CSV formats
+- Track all administrative actions with timestamps
+- Monitor system activity and compliance
+- Detailed statistics on audit events
 
-### Data Quality Dashboard
-- Metrics by region and industry
-- Comprehensive quality scores (completeness, accuracy, consistency, timeliness, validity)
-- Trend analysis and historical data
-- Interactive charts with pagination and filtering
+### 3. AI Model Management
+- Set active scoring model versions per organization
+- Toggle AI model providers on/off
+- Monitor model latency and error rates
+- Track model performance metrics
+- Record model usage metrics over time
 
-### Moderation Queue
-- Review and approve profile/data/config changes
-- Bulk approval workflows
-- Audit trail with moderator notes
-- Real-time queue updates
+### 4. RBAC & Security
+- Role-based access control with permission gating
+- Structured logging middleware for all admin operations
+- JWT authentication support
+- Predefined roles: admin, billing_manager, compliance_officer, ai_model_manager, viewer
+- User context tracking in all operations
 
-### Health Monitoring
-- Real-time connector health status
-- Error logging with severity levels
-- Health trends and analytics
-- Automatic issue detection and alerting
-- WebSocket-based real-time updates
+## Project Structure
 
-## Architecture
+```
+packages/
+├── api/                        # NestJS Backend API
+│   ├── src/
+│   │   ├── controllers/        # API endpoints
+│   │   ├── services/           # Business logic
+│   │   ├── entities/           # Database schemas
+│   │   ├── dtos/               # Data transfer objects
+│   │   ├── guards/             # Auth & RBAC guards
+│   │   ├── decorators/         # Custom decorators
+│   │   ├── middleware/         # Express middleware
+│   │   ├── app.module.ts       # Main module
+│   │   └── main.ts             # Entry point
+│   └── package.json
+│
+└── web/                        # Next.js Frontend
+    ├── src/
+    │   ├── pages/
+    │   │   ├── admin/          # Admin pages
+    │   │   │   ├── billing.tsx
+    │   │   │   ├── audit.tsx
+    │   │   │   └── ai-models.tsx
+    │   │   ├── _app.tsx
+    │   │   └── _document.tsx
+    │   ├── layouts/            # Layout components
+    │   ├── components/         # Reusable components
+    │   └── styles/             # Global styles
+    └── package.json
+```
 
-### Backend (Node.js + TypeScript)
-- **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL with connection pooling
-- **Authentication**: JWT with bcrypt password hashing
-- **Encryption**: AES-256-GCM for sensitive data
-- **Real-time**: WebSocket server for live updates
-- **Logging**: Winston with structured logging
-- **Search**: OpenSearch integration for log analysis
+## API Endpoints
 
-### Frontend (React + TypeScript)
-- **Framework**: React 18 with TypeScript
-- **UI Library**: Tailwind CSS with Headless UI
-- **State Management**: React Query for server state
-- **Routing**: React Router v6
-- **Forms**: React Hook Form
-- **Charts**: Recharts for data visualization
-- **Real-time**: WebSocket client integration
+### Billing Endpoints
+- `POST /admin/billing` - Create billing record
+- `GET /admin/billing/:organizationId` - Get billing by org
+- `PUT /admin/billing/:organizationId` - Update billing
+- `POST /admin/billing/search` - Search billings
+- `POST /admin/billing/export` - Export billing data
+- `GET /admin/billing/alerts/near-limit` - Get orgs near limit
+
+### Audit Log Endpoints
+- `POST /admin/audit-logs/search` - Search audit logs
+- `GET /admin/audit-logs/organization/:organizationId` - Get org logs
+- `GET /admin/audit-logs/user/:organizationId/:userId` - Get user logs
+- `GET /admin/audit-logs/action/:organizationId/:action` - Get logs by action
+- `POST /admin/audit-logs/export` - Export audit logs
+- `GET /admin/audit-logs/stats/:organizationId` - Get audit stats
+
+### AI Model Endpoints
+- `POST /admin/ai-models` - Create AI model
+- `GET /admin/ai-models/:id` - Get model by ID
+- `GET /admin/ai-models/organization/:organizationId/all` - Get org models
+- `GET /admin/ai-models/organization/:organizationId/active` - Get active model
+- `PUT /admin/ai-models/:id` - Update model
+- `POST /admin/ai-models/switch-active` - Switch active model
+- `POST /admin/ai-models/toggle-provider` - Toggle provider
+- `GET /admin/ai-models/organization/:organizationId/metrics` - Get metrics
+- `POST /admin/ai-models/:id/record-metrics` - Record metrics
+- `DELETE /admin/ai-models/:id` - Delete model
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL 12+
-- npm or yarn
+- pnpm (recommended)
 
-### Backend Setup
+### Installation
 
-1. Navigate to backend directory:
 ```bash
-cd backend
+# Install dependencies
+pnpm install
+
+# Create .env files
+cp packages/api/.env.example packages/api/.env
+cp packages/web/.env.example packages/web/.env
+
+# Run database migrations
+pnpm --filter api run migrate
+
+# Start development servers
+pnpm dev
 ```
 
-2. Install dependencies:
-```bash
-npm install
+### Environment Variables
+
+**API (.env)**
+```
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=admin_billing
+PORT=3001
+NODE_ENV=development
+STRIPE_API_KEY=sk_test_...
+CORS_ORIGIN=http://localhost:3000
 ```
 
-3. Copy environment variables:
-```bash
-cp .env.example .env
+**Web (.env.local)**
 ```
-
-4. Update `.env` with your configuration:
-```bash
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=admin_data_sources
-DB_USER=postgres
-DB_PASSWORD=your_password
-JWT_SECRET=your_jwt_secret
-ENCRYPTION_KEY=your_32_byte_encryption_key
-```
-
-5. Build and start the server:
-```bash
-npm run build
-npm start
-```
-
-For development:
-```bash
-npm run dev
-```
-
-### Frontend Setup
-
-1. Navigate to frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start development server:
-```bash
-npm run dev
-```
-
-4. Build for production:
-```bash
-npm run build
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+API_URL=http://localhost:3001/api
 ```
 
 ## Database Schema
 
-The application uses PostgreSQL with the following main tables:
+### Billing Entity
+- id (UUID, PK)
+- organizationId (UUID, FK)
+- status (enum: trial, paid, delinquent)
+- plan (enum: starter, professional, enterprise)
+- stripeCustomerId (string)
+- stripeSubscriptionId (string)
+- monthlySpend (decimal)
+- apiCallsUsed (integer)
+- apiCallsLimit (integer)
+- usersCount (integer)
+- projectsCount (integer)
 
-- `admin_users` - User authentication and authorization
-- `data_sources` - Connector configurations with encrypted credentials
-- `feature_flags` - Feature flag definitions with tenant overrides
-- `plans` - Subscription plans and feature mappings
-- `data_quality_metrics` - Quality metrics by region/industry
-- `moderation_queue` - Pending changes awaiting approval
-- `health_logs` - System health and error logs
+### Usage Metrics Entity
+- id (UUID, PK)
+- organizationId (UUID, FK)
+- metricType (enum: api_calls, search_queries, data_export, storage_gb, seats)
+- value (integer)
+- limit (integer)
+- cost (decimal)
+- dateRecorded (date)
 
-## Security Features
+### Audit Log Entity
+- id (UUID, PK)
+- organizationId (UUID, FK)
+- userId (UUID)
+- action (enum: create, read, update, delete, export, login, logout, etc.)
+- resourceType (enum: user, organization, billing, usage, ai_model, etc.)
+- resourceId (UUID)
+- description (text)
+- status (string)
+- ipAddress (string)
+- userAgent (string)
 
-- **Encrypted Storage**: All API keys and sensitive credentials are encrypted using AES-256-GCM
-- **JWT Authentication**: Secure token-based authentication with configurable expiration
-- **Role-Based Access Control**: Granular permissions per resource and action
-- **Input Validation**: Comprehensive validation using Joi schemas
-- **CORS Protection**: Configurable cross-origin resource sharing
-- **Rate Limiting**: Built-in rate limiting per connector
-- **SQL Injection Prevention**: Parameterized queries throughout
+### AI Model Entity
+- id (UUID, PK)
+- organizationId (UUID, FK)
+- name (string)
+- provider (enum: openai, anthropic, cohere, local)
+- version (string)
+- status (enum: active, inactive, deprecated, beta)
+- isActive (boolean)
+- averageLatencyMs (decimal)
+- errorRate (decimal)
+- totalRequests (integer)
+- failedRequests (integer)
+- config (JSON)
 
-## API Documentation
+## RBAC Permissions
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/user/me` - Get current user
-- `PUT /api/user/profile` - Update profile
-- `PUT /api/user/password` - Change password
+### Admin
+- All permissions
 
-### Data Sources
-- `GET /api/data-sources` - List data sources (with pagination)
-- `GET /api/data-sources/:id` - Get specific data source
-- `POST /api/data-sources` - Create new data source
-- `PUT /api/data-sources/:id` - Update data source
-- `DELETE /api/data-sources/:id` - Delete data source
-- `PATCH /api/data-sources/:id/toggle` - Enable/disable data source
+### Billing Manager
+- billing:read, billing:update, billing:search, billing:export
+- audit:read
 
-### Feature Flags
-- `GET /api/feature-flags` - List feature flags
-- `POST /api/feature-flags` - Create feature flag
-- `PUT /api/feature-flags/:id` - Update feature flag
-- `POST /api/feature-flags/:id/tenant-overrides` - Add tenant override
-- `DELETE /api/feature-flags/:id/tenant-overrides/:tenantId` - Remove override
+### Compliance Officer
+- audit:read, audit:search, audit:export
+- billing:read
 
-### Plans
-- `GET /api/plans` - List plans
-- `POST /api/plans` - Create plan
-- `PUT /api/plans/:id` - Update plan
-- `POST /api/plans/:id/clone` - Clone plan
-- `PATCH /api/plans/:id/toggle` - Activate/deactivate plan
+### AI Model Manager
+- ai-model:create, ai-model:read, ai-model:update, ai-model:delete
+- audit:read
 
-### Data Quality
-- `GET /api/data-quality` - Get quality metrics
-- `GET /api/data-quality/summary` - Get summary statistics
-- `GET /api/data-quality/trends` - Get trend data
-- `POST /api/data-quality` - Create/update metrics
+### Viewer
+- billing:read, audit:read, ai-model:read
 
-### Moderation
-- `GET /api/moderation` - Get moderation queue
-- `PATCH /api/moderation/:id/approve` - Approve changes
-- `PATCH /api/moderation/:id/reject` - Reject changes
-- `PATCH /api/moderation/bulk-approve` - Bulk approve
+## Structured Logging
 
-### Health Monitoring
-- `GET /api/health/logs` - Get health logs
-- `GET /api/health/summary` - Get health summary
-- `GET /api/health/trends` - Get health trends
-- `POST /api/health/logs` - Create health log
-- `PATCH /api/health/logs/:id/resolve` - Resolve health log
-
-## Real-time Features
-
-The system uses WebSockets for real-time updates:
-
-- **Health Updates**: Live connector health status changes
-- **Data Quality Updates**: Real-time quality metric changes
-- **System Alerts**: Immediate notifications for critical issues
-- **Moderation Updates**: Live queue status changes
-
-WebSocket endpoint: `ws://localhost:3001` (adjust for your environment)
-
-## Deployment
-
-### Production Considerations
-
-1. **Environment Variables**: Ensure all secrets are properly configured
-2. **Database**: Use a managed PostgreSQL service with backups
-3. **SSL/TLS**: Enable HTTPS for all API endpoints
-4. **Monitoring**: Set up application monitoring and alerting
-5. **Scaling**: Consider horizontal scaling with load balancers
-6. **Backups**: Regular database and configuration backups
-
-### Docker Deployment
-
-```dockerfile
-# Backend Dockerfile example
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY dist ./dist
-EXPOSE 3001
-CMD ["node", "dist/index.js"]
+All admin operations are logged with the following structure:
+```json
+{
+  "timestamp": "2024-01-01T12:00:00Z",
+  "method": "POST",
+  "path": "/admin/billing",
+  "statusCode": 201,
+  "duration": "45ms",
+  "userId": "user-id",
+  "organizationId": "org-id",
+  "userAgent": "...",
+  "ipAddress": "..."
+}
 ```
 
-## Testing
+## Development
 
+### Running Tests
 ```bash
-# Backend tests
-cd backend
-npm test
-
-# Frontend tests
-cd frontend
-npm test
+pnpm test
 ```
 
-## Contributing
+### Linting
+```bash
+pnpm lint
+```
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+### Building
+```bash
+pnpm build
+```
+
+## Acceptance Criteria Met
+
+✅ Usage data visualized in charts and graphs
+✅ Billing status updates saved to database
+✅ Audit log filters work (org, user, action, date range)
+✅ Export functionality works (JSON, CSV)
+✅ AI model switches propagate to backend config
+✅ RBAC gating enforced on all endpoints
+✅ Structured logging implemented
+✅ Stripe integration stubbed
 
 ## License
 
-This project is part of the Admin Data Sources Management System implementation.
+Proprietary - All rights reserved
