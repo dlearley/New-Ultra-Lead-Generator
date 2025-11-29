@@ -13,11 +13,13 @@ module.exports = {
   roots: [
     '<rootDir>',
     '<rootDir>/../test',
+    '<rootDir>/../tests',
   ],
   moduleNameMapper: {
     '^@api/(.*)$': '<rootDir>/api/$1',
     '^@common/(.*)$': '<rootDir>/common/$1',
     '^@database/(.*)$': '<rootDir>/database/$1',
     '^@modules/(.*)$': '<rootDir>/modules/$1',
+    '^@workers/(.*)$': '<rootDir>/workers/$1',
   },
 };

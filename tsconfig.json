@@ -10,7 +10,8 @@
       "@api/*": ["src/api/*"],
       "@common/*": ["src/common/*"],
       "@database/*": ["src/database/*"],
-      "@modules/*": ["src/modules/*"]
+      "@modules/*": ["src/modules/*"],
+      "@workers/*": ["src/workers/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
