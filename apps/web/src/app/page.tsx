@@ -1,64 +1,34 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
-import { redirect } from 'next/navigation'
+import Link from "next/link";
 
-export default async function Home() {
-  const session = await getServerSession(authOptions)
-
-  if (!session) {
-    redirect('/auth/signin')
-  }
-
+export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-12">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Welcome to Auth SSO MFA
-            </h1>
-            <p className="text-lg text-gray-600 mb-8">
-              Authentication system with SSO, MFA, and session management
-            </p>
-            
-            <div className="bg-white shadow rounded-lg p-8 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Dashboard
-              </h2>
-              
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="text-lg font-medium text-gray-900">User Info</h3>
-                  <p className="text-gray-600">Email: {session.user?.email}</p>
-                  <p className="text-gray-600">Name: {session.user?.name}</p>
-                  <p className="text-gray-600">MFA Enabled: {session.user?.mfaEnabled ? 'Yes' : 'No'}</p>
-                </div>
-                
-                <div className="flex flex-wrap gap-4 justify-center">
-                  <a
-                    href="/auth/mfa"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    MFA Settings
-                  </a>
-                  <a
-                    href="/auth/sessions"
-                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    Session Management
-                  </a>
-                  <a
-                    href="/api/auth/signout"
-                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
-                  >
-                    Sign Out
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-zinc-50 to-white px-4 py-24 dark:from-zinc-950 dark:to-zinc-900">
+      <div className="mx-auto max-w-3xl text-center">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-500">
+          Prospecting Workbench
+        </p>
+        <h1 className="mt-6 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-6xl">
+          Zero in on your next high-converting accounts
+        </h1>
+        <p className="mt-6 text-lg text-zinc-600 dark:text-zinc-300">
+          Use the AI-assisted search experience to mix natural language queries with structured filters,
+          visualize prospects on a live map, and take action with one click.
+        </p>
+        <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+          <Link
+            href="/search"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-900 px-8 text-base font-medium text-white shadow-lg transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+          >
+            Launch Search Workspace
+          </Link>
+          <Link
+            href="/search"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-base font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
+          >
+            View Saved Searches
+          </Link>
         </div>
       </div>
-    </div>
-  )
+    </main>
+  );
 }

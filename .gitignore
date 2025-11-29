@@ -1,70 +1,23 @@
 # Dependencies
 node_modules
-pnpm-lock.yaml
-.pnpm-lock.yaml
-.pnpm-store
-.pnp.cjs
-.pnp.loader.mjs
+/apps/*/node_modules
 
-# Build outputs
-dist
-build
+# Builds
 .next
-.turbo
 out
-.dist
-scripts/**/dist
+dist
+.cache
 
-# Runtime data
-*.log
-*.pid
-*.seed
-.DS_Store
+# Env
+.env
+.env.local
+.env.*
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-.env.development
-.env.production
-.env.test
-!.env.example
-apps/*/.env
-apps/*/.env.local
-apps/*/.env.development
-apps/*/.env.production
-!apps/*/.env.example
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# OS
+# Others
 .DS_Store
-Thumbs.db
-
-# Testing
-coverage
-.nyc_output
-
-# Cache
-.eslintcache
-.prettier-ignore-cache
-.turbo
-
-# Temporary
-tmp
-temp
+.vercel

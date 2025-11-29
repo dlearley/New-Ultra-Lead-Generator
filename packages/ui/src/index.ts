@@ -1,21 +1,19 @@
-// UI Components Library
-export const version = '0.0.1';
+// Design Tokens
+export * from './tokens';
 
-export interface ComponentProps {
-  className?: string;
-}
+// Core Components
+export * from './components/button';
+export * from './components/modal';
+export * from './components/toast';
+export * from './components/use-toast';
+export * from './components/toaster';
+export * from './components/loader';
+export * from './components/collapsible';
+export * from './components/responsive-container';
 
-export const Button = (props: ComponentProps) => ({
-  ...props,
-  component: 'Button',
-});
+// AI Components
+export * from './components/ai-summary-modal';
+export * from './components/ai-outreach-modal';
 
-export const Input = (props: ComponentProps) => ({
-  ...props,
-  component: 'Input',
-});
-
-export const Card = (props: ComponentProps) => ({
-  ...props,
-  component: 'Card',
-});
+// Utilities
+export * from './lib/utils';
