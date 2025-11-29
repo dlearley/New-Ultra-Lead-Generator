@@ -19,3 +19,7 @@ export class CoreService {
 }
 
 export const createCoreService = (config: Config) => new CoreService(config);
+
+// Export models and enums
+export * from './enums';
+export * from './models';

@@ -1,25 +1,40 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "$schema": "https://turbo.build/json-schema.json",
+  "extends": ["//"],
+  "globalDependencies": [
+    "**/.env.local",
+    "**/.eslintrc",
+    "**/tsconfig.json"
+  ],
+  "globalEnv": [
+    "NODE_ENV"
+  ],
   "pipeline": {
+    "lint": {
+      "outputs": [],
+      "cache": false
+    },
+    "type-check": {
+      "outputs": [],
+      "cache": false
+    },
+    "test": {
+      "outputs": [],
+      "cache": false
+    },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**"
+      ],
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
-    },
-    "test": {
-      "dependsOn": ["build"],
-      "outputs": ["coverage/**"]
-    },
-    "lint": {
-      "outputs": []
-    },
-    "type-check": {
-      "dependsOn": ["^build"],
-      "outputs": []
     }
   }
 }

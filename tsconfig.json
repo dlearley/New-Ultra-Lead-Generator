@@ -2,28 +2,41 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
-    "moduleResolution": "node",
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@ai/*": ["packages/ai/src/*"],
-      "@ai-test/*": ["packages/ai/tests/*"]
+      "@ui/*": [
+        "packages/ui/src/*"
+      ],
+      "@core/*": [
+        "packages/core/src/*"
+      ],
+      "@db/*": [
+        "packages/db/src/*"
+      ],
+      "@search/*": [
+        "packages/search/src/*"
+      ],
+      "@ai/*": [
+        "packages/ai/src/*"
+      ]
     }
   },
-  "include": ["packages", "apps"],
-  "exclude": ["node_modules", "dist", "build"]
+  "exclude": [
+    "node_modules",
+    ".turbo"
+  ]
 }

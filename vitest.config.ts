@@ -11,14 +11,18 @@ export default defineConfig({
       exclude: [
         'node_modules/',
         'dist/',
-        '**/*.config.ts',
+        '.next/',
+        '.turbo/',
       ],
     },
   },
   resolve: {
     alias: {
+      '@ui': path.resolve(__dirname, './packages/ui/src'),
+      '@core': path.resolve(__dirname, './packages/core/src'),
+      '@db': path.resolve(__dirname, './packages/db/src'),
+      '@search': path.resolve(__dirname, './packages/search/src'),
       '@ai': path.resolve(__dirname, './packages/ai/src'),
-      '@ai-test': path.resolve(__dirname, './packages/ai/tests'),
     },
   },
 });

@@ -1,44 +1,52 @@
 # Dependencies
-node_modules/
+node_modules
 pnpm-lock.yaml
-yarn.lock
-package-lock.json
+.pnpm-lock.yaml
 
 # Build outputs
-dist/
-build/
-*.tsbuildinfo
+dist
+build
+.next
+.turbo
+out
 
-# Development
+# Runtime data
+*.log
+*.pid
+*.seed
+.DS_Store
+
+# Environment variables
 .env
 .env.local
 .env.*.local
-.DS_Store
 
-# Editor
-.vscode/
-.idea/
+# IDE
+.vscode
+.idea
 *.swp
 *.swo
 *~
 .project
-.settings
+.classpath
+.c9/
+*.launch
+.settings/
 *.sublime-workspace
 
+# OS
+.DS_Store
+Thumbs.db
+
 # Testing
-coverage/
-.nyc_output/
-*.lcov
+coverage
+.nyc_output
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Cache
+.eslintcache
+.prettier-ignore-cache
+.turbo
 
-# Misc
-.cache/
-tmp/
-temp/
-*.tgz
+# Temporary
+tmp
+temp

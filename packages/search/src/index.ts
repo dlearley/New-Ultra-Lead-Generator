@@ -32,3 +32,9 @@ export class SearchEngine {
 }
 
 export const createSearchEngine = () => new SearchEngine();
+
+// Export OpenSearch functionality
+export * from './client';
+export * from './mappings';
+export * from './search';
+export * from './migration';
