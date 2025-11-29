@@ -1,346 +1,115 @@
-# Engine Labs API - Search Module
+# Local infrastructure stack
 
-Phase 4 Part 2: Business Search API with OpenSearch and PostgreSQL integration.
+This repository ships an opinionated Docker Compose stack that mirrors the services required for the Phase 2/Phase 3 applications: PostgreSQL (with pgvector), Redis with a BullMQ dashboard, OpenSearch, and optional S3-compatible storage via MinIO.
 
-## Features
+## What's included
 
-- **Full-text Search**: Keyword search with fuzzy matching support
-- **Geo Distance Filtering**: Search by coordinates or address with distance radius
-- **Multi-Filter Combinations**: Filter by industry, location, revenue, employees, hiring, tech stack
-- **Aggregations/Facets**: Get breakdowns by industry, geography, revenue ranges, hiring levels, and tech stack
-- **Pagination & Sorting**: Skip/take pagination with multiple sort options (relevance, name, revenue, employees, distance, created date)
-- **Saved Searches**: CRUD operations for storing search queries with user/organization metadata
-- **"Did You Mean" Suggestions**: Smart query suggestions based on search results
+| Service | Image | Port(s) | Notes |
+| --- | --- | --- | --- |
+| PostgreSQL + pgvector | `pgvector/pgvector:pg16` | `5432` | Persistent volume `postgres_data` and health checks enabled |
+| Redis | `redis:7.2-alpine` | `6379` | Persists data under `redis_data` |
+| BullMQ dashboard | Custom Node service | `3002` | Basic-auth protected dashboard backed by Redis |
+| OpenSearch | `opensearchproject/opensearch:2.11.0` | `9200`, `9600` | Runs single node with security bootstrap password |
+| MinIO | `minio/minio:RELEASE.2024-05-10T01-41-38Z` | `9000`, `9001` | Optional file storage + automatic bucket bootstrap |
 
-## Project Structure
+The stack attaches every service to the named `app-infra` bridge network and persists data with dedicated Docker volumes. Health checks ensure dependent services (for example the BullMQ dashboard) only start after their backing service is ready.
 
-```
-src/
-├── api/
-│   ├── search/
-│   │   ├── search.controller.ts       # Search API endpoints
-│   │   ├── search.service.ts          # Search business logic
-│   │   ├── opensearch.service.ts      # OpenSearch integration
-│   │   ├── search.module.ts           # Search module
-│   │   └── query-builder.spec.ts      # Unit tests
-│   └── saved-search/
-│       ├── saved-search.controller.ts # Saved search CRUD endpoints
-│       ├── saved-search.service.ts    # Saved search business logic
-│       └── saved-search.module.ts     # Saved search module
-├── common/
-│   ├── dtos/
-│   │   ├── business-search.input.ts   # Search input DTO with validation
-│   │   ├── search-response.dto.ts     # Search response structure
-│   │   └── saved-search.dto.ts        # Saved search DTOs
-│   └── services/
-│       └── geocoding.service.ts       # Address-to-coordinates conversion
-├── database/
-│   ├── entities/
-│   │   ├── business.entity.ts         # Business entity
-│   │   └── saved-search.entity.ts     # Saved search entity
-│   ├── data-source.ts                 # TypeORM data source
-│   └── database.module.ts             # Database module
-└── main.ts                            # Application entry point
+## Quick start
 
-tests/
-└── e2e/
-    └── search-api.spec.ts             # Playwright contract tests
-```
+1. Copy the environment templates:
+   ```bash
+   cp .env.example .env
+   cp apps/web/.env.example apps/web/.env
+   cp apps/admin/.env.example apps/admin/.env
+   cp apps/api/.env.example apps/api/.env
+   ```
+2. (Optional) install pnpm locally so you can reuse the provided scripts: https://pnpm.io/installation.
+3. Bring the infrastructure online:
+   ```bash
+   pnpm docker:up
+   # or: make docker-up
+   ```
+4. Apply the Phase 2 migrations so PostgreSQL has the required schemas/extension:
+   ```bash
+   pnpm db:migrate:phase2
+   ```
+5. Seed the database with demo data:
+   ```bash
+   pnpm seed
+   ```
+6. (Optional) Start the Phase 3 connectors shim (keeps external credentials loaded and ready for your real connector processes):
+   ```bash
+   pnpm connectors:phase3
+   ```
+7. Point your web/admin/api apps at the stack using the `.env` files you created in step 1. The defaults assume the following URLs:
+   - Web: `http://localhost:3000`
+   - Admin: `http://localhost:3100`
+   - API: `http://localhost:4000`
 
-## API Endpoints
+To stop the infrastructure run `pnpm docker:down` (or `make docker-down`). Tail service logs with `pnpm docker:logs` or `make docker-logs`. There are additional scripts for service-specific logs, e.g. `pnpm docker:logs:postgres`.
 
-### Search Businesses
+## Environment variables
+
+- The root `.env` file contains shared infrastructure credentials (database, Redis, OpenSearch, MinIO, AI providers, and connector tokens).
+- Each application under `apps/*/.env.example` defines runtime configuration for that specific surface:
+  - **Web**: NextAuth secrets, OAuth client ids, public URLs, analytics keys.
+  - **Admin**: Admin portal port, JWT signing material, Okta/Google OAuth ids, storage configuration.
+  - **API**: Database/Redis/OpenSearch URLs, MinIO credentials, JWT keys, and connector tokens including OpenAI/Anthropic keys.
+
+Update these files with project-specific values before copying them to `.env`.
+
+## Phase 2 migrations
+
+SQL files live under `scripts/migrations/phase-2/`. The helper script `scripts/migrations/phase-2/apply.sh` (invoked via `pnpm db:migrate:phase2`) iterates over every `.sql` file in order and applies it to the database specified by `POSTGRES_URL`/`DATABASE_URL`. It automatically sources the root `.env` (override with `ENV_FILE=...`) and requires the `psql` CLI that ships with PostgreSQL (`brew install postgresql`, `apt install postgresql-client`, etc.). The default migration enables the `vector` + `pgcrypto` extensions, creates the `app_public` schema, and defines a `documents` table with an IVFFlat index ready for pgvector searches.
+
+If you add additional migrations, drop them in this folder with a lexical prefix (e.g., `0002_add_users.sql`) so they run deterministically.
+
+## Phase 3 connectors
+
+The `connectors/phase-3` directory contains a lightweight runner that validates external credentials and keeps a heartbeat loop active. Replace `runner.mjs` with the real connector orchestration from Phase 3, but keep the `run.sh` contract intact so `pnpm connectors:phase3` (or `make connectors-phase3`) continues to work for the team. The script automatically sources the root `.env` (override with `ENV_FILE=...`) so the same credentials drive Docker and the connectors.
+
+Environment variables required by this runner are already listed inside `.env.example` and the per-app files. Set them before starting the script.
+
+## Demo Data Seeding
+
+The repository includes comprehensive seed scripts to populate your database with realistic demo data across all entities:
 
 ```bash
-POST /api/search/businesses
-Content-Type: application/json
+# Seed database with demo data (idempotent)
+pnpm seed
 
-{
-  "query": "tech company",
-  "industry": "Technology",
-  "location": "San Francisco",
-  "geoLocation": {
-    "latitude": 37.7749,
-    "longitude": -122.4194,
-    "distanceKm": 50
-  },
-  "minRevenue": 1000000,
-  "maxRevenue": 10000000,
-  "minEmployees": 10,
-  "maxEmployees": 500,
-  "minHiring": 5,
-  "maxHiring": 100,
-  "techStack": ["JavaScript", "React"],
-  "sortBy": "relevance",
-  "sortOrder": "desc",
-  "skip": 0,
-  "take": 20,
-  "fuzzyMatching": "high"
-}
+# Reset and reseed (clean slate)
+pnpm seed:reset
 ```
 
-**Response:**
-```json
-{
-  "results": [
-    {
-      "id": "uuid",
-      "name": "Tech Company Inc",
-      "description": "Leading technology company",
-      "industry": "Technology",
-      "location": "San Francisco",
-      "latitude": 37.7749,
-      "longitude": -122.4194,
-      "revenue": 5000000,
-      "employees": 150,
-      "hiring": 25,
-      "techStack": ["JavaScript", "React", "Node.js"],
-      "score": 0.95
-    }
-  ],
-  "total": 42,
-  "skip": 0,
-  "take": 20,
-  "aggregations": {
-    "industry": [
-      { "name": "Technology", "count": 30, "value": "Technology" },
-      { "name": "Finance", "count": 12, "value": "Finance" }
-    ],
-    "location": [...],
-    "techStack": [...],
-    "revenueRanges": [...],
-    "hiringLevels": [...]
-  },
-  "suggestions": [
-    { "text": "Tech Company Inc", "score": 0.95 },
-    { "text": "Tech Solutions LLC", "score": 0.87 }
-  ]
-}
-```
+The seed data includes:
+- **10 diverse industries**: Dental, HVAC, Trucking, Plumbing, Roofing, Landscaping, Real Estate, Legal, Medical, Automotive
+- **35+ US cities** across all regions (Northeast, Southeast, Midwest, Southwest, West)
+- **pgvector embeddings**: 1536-dimension vectors for similarity search
+- **OpenSearch indexing**: Full-text and geo-spatial search
+- **Complete relationships**: Organizations, users, businesses, contacts, social profiles, lead lists, saved searches, alerts, and ICP configs
 
-### Saved Searches
+See [docs/SEEDING.md](docs/SEEDING.md) for complete documentation, configuration options, and dataset details.
 
-#### Create Saved Search
-```bash
-POST /api/saved-searches
-Content-Type: application/json
+## Helpful commands
 
-{
-  "name": "Tech Companies in SF",
-  "description": "Search for tech companies",
-  "userId": "user-uuid",
-  "organizationId": "org-uuid",
-  "query": {
-    "query": "tech",
-    "industry": "Technology",
-    "geoLocation": {
-      "latitude": 37.7749,
-      "longitude": -122.4194,
-      "distanceKm": 50
-    }
-  },
-  "filters": {
-    "minRevenue": 1000000,
-    "maxRevenue": 10000000
-  }
-}
-```
+| Command | Description |
+| --- | --- |
+| `pnpm docker:up` / `make docker-up` | Build and start all services with health checks |
+| `pnpm docker:down` / `make docker-down` | Stop and remove containers, networks, and volumes |
+| `pnpm docker:logs` | Tail combined logs for the stack |
+| `pnpm docker:logs:<service>` | Tail logs for a single service (postgres, redis, opensearch, minio) |
+| `pnpm db:migrate:phase2` | Apply SQL migrations from `scripts/migrations/phase-2` |
+| `pnpm seed` | Seed database with comprehensive demo data |
+| `pnpm seed:reset` | Reset database and reseed with fresh data |
+| `pnpm connectors:phase3` | Boot the Phase 3 connector runner |
 
-#### List Saved Searches
-```bash
-GET /api/saved-searches?userId=user-uuid&organizationId=org-uuid&skip=0&take=20
-```
+After the stack is running and migrations/connectors are loaded, your apps can use their `.env` files to connect to:
 
-#### Get Single Saved Search
-```bash
-GET /api/saved-searches/{id}
-```
+- PostgreSQL: `postgresql://postgres:postgres@localhost:5432/app_db`
+- Redis: `redis://:redislocal@localhost:6379`
+- BullMQ dashboard: `http://localhost:3002` (ops / super-secret)
+- OpenSearch: `http://localhost:9200` (admin / admin)
+- MinIO: `http://localhost:9000` (minio / minio123)
 
-#### Update Saved Search
-```bash
-PUT /api/saved-searches/{id}
-Content-Type: application/json
-
-{
-  "name": "Updated Name",
-  "description": "Updated description",
-  "query": { ... },
-  "filters": { ... }
-}
-```
-
-#### Delete Saved Search
-```bash
-DELETE /api/saved-searches/{id}
-```
-
-## Setup and Installation
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 12+
-- OpenSearch 2.0+
-
-### Installation
-
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-3. Configure environment variables for your database and OpenSearch instance
-
-4. Run database migrations:
-```bash
-npm run build
-npm run db:migrate
-```
-
-## Development
-
-### Start Development Server
-```bash
-npm run start:dev
-```
-
-### Run Tests
-
-#### Unit Tests (Vitest)
-```bash
-npm run test:vitest
-npm run test:vitest:ui
-```
-
-#### E2E Tests (Playwright)
-```bash
-npm run test:pw
-```
-
-#### All Tests
-```bash
-npm test
-```
-
-### Code Quality
-
-#### Format Code
-```bash
-npm run format
-```
-
-#### Lint Code
-```bash
-npm run lint
-```
-
-## Query Builder Features
-
-The query builder supports:
-
-1. **Text Search**: Multi-field search with keyword matching
-2. **Fuzzy Matching**: Automatic fuzzy search for typo tolerance (fuzziness: AUTO)
-3. **Multi-Filter Combinations**: Boolean logic combining multiple filters
-4. **Geo Distance**: Haversine formula distance filtering
-5. **Range Filters**: Revenue, employees, hiring count ranges
-6. **Faceted Search**: Aggregations across multiple dimensions
-7. **Sorting**: Multiple sort fields with ASC/DESC ordering
-8. **Pagination**: Skip/take for efficient result chunking
-
-## Validation
-
-- Input DTOs use `class-validator` for comprehensive validation
-- All numeric inputs support min/max constraints
-- Enum validation for sort fields and sort orders
-- Array validation for multi-value filters
-
-## Error Handling
-
-- 404 Not Found: When saved search doesn't exist
-- 400 Bad Request: Validation errors on input
-- 500 Internal Server Error: Server errors logged with context
-
-## Database Schema
-
-### businesses table
-```sql
-- id (UUID, Primary Key)
-- name (String, Required, Indexed)
-- description (Text)
-- industry (String, Indexed)
-- location (String, Indexed)
-- latitude (Decimal)
-- longitude (Decimal)
-- revenue (Integer)
-- employees (Integer)
-- hiring (Integer)
-- techStack (Array)
-- metadata (JSONB)
-- createdAt (Timestamp, Indexed)
-- updatedAt (Timestamp)
-```
-
-### saved_searches table
-```sql
-- id (UUID, Primary Key)
-- name (String, Required)
-- description (Text)
-- userId (UUID, Indexed)
-- organizationId (UUID, Indexed)
-- query (JSONB, Required)
-- filters (JSONB)
-- resultsCount (Integer)
-- createdAt (Timestamp, Indexed)
-- updatedAt (Timestamp)
-```
-
-## OpenSearch Mapping
-
-The `businesses` index uses:
-- Text fields with standard analyzer and keyword sub-fields
-- Geo-point fields for distance calculations
-- Keyword fields for exact matching
-- Integer fields for range queries
-- Custom tokenizers for autocomplete (if needed)
-
-## Testing
-
-### Unit Tests
-- Query builder validation
-- Filter combination logic
-- Range filter calculations
-- Pagination parameters
-
-### Playwright Contract Tests
-- Full API contract validation
-- Text search with various queries
-- Geo-distance filtering
-- Multi-filter combinations
-- Aggregation structure validation
-- Saved search CRUD operations
-- Pagination and sorting
-- "Did you mean" suggestions
-
-## Performance Considerations
-
-- Database indexes on frequently queried fields
-- OpenSearch indexing for fast full-text search
-- Pagination limits (max 100 results per page)
-- Aggregation bucketing with reasonable limits
-- Connection pooling for database
-
-## Security
-
-- Input validation on all DTOs
-- SQL injection prevention via TypeORM parameterized queries
-- OpenSearch query injection prevention via proper query building
-- CORS enabled (configurable)
-- Environment variable secrets management
-
-## License
-
-MIT
+Feel free to customize credentials in `.env` and re-run `pnpm docker:up` to recreate the stack with your own values.
