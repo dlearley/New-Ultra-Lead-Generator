@@ -1,34 +1,55 @@
-# Environment files
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Environment
 .env
 .env.local
-.env.development
-.env.production
-.env.test
-!.env.example
-apps/*/.env
-apps/*/.env.local
-apps/*/.env.development
-apps/*/.env.production
-!apps/*/.env.example
-scripts/**/dist
+.env.*.local
 
-# Node modules and build artifacts
-node_modules
-.pnp.cjs
-.pnp.loader.mjs
-.pnpm-store
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+turbo-debug.log
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+
+# Logs
+logs/
+*.log
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-.dist
-build
-dist
-coverage
 
-# Editor and OS files
-.DS_Store
+# Docker
+.docker/
+docker-compose.override.yml
+
+# OS
 Thumbs.db
-.idea
-.vscode
-*.swp
+.DS_Store
+
+# Temporary
+tmp/
+temp/
+*.tmp

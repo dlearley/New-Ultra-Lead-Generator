@@ -1,88 +1,242 @@
-# Local infrastructure stack
+# Enterprise Monorepo
 
-This repository ships an opinionated Docker Compose stack that mirrors the services required for the Phase 2/Phase 3 applications: PostgreSQL (with pgvector), Redis with a BullMQ dashboard, OpenSearch, and optional S3-compatible storage via MinIO.
+![CI Pipeline](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg)
+![Lint Status](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg?label=lint)
+![Test Status](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg?label=tests)
+![Build Status](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg?label=build)
 
-## What's included
+> **Note**: Replace `[owner]` and `[repo]` in badge URLs with your actual GitHub repository details
 
-| Service | Image | Port(s) | Notes |
-| --- | --- | --- | --- |
-| PostgreSQL + pgvector | `pgvector/pgvector:pg16` | `5432` | Persistent volume `postgres_data` and health checks enabled |
-| Redis | `redis:7.2-alpine` | `6379` | Persists data under `redis_data` |
-| BullMQ dashboard | Custom Node service | `3002` | Basic-auth protected dashboard backed by Redis |
-| OpenSearch | `opensearchproject/opensearch:2.11.0` | `9200`, `9600` | Runs single node with security bootstrap password |
-| MinIO | `minio/minio:RELEASE.2024-05-10T01-41-38Z` | `9000`, `9001` | Optional file storage + automatic bucket bootstrap |
+A modern, scalable monorepo with pnpm and Turborepo, featuring:
 
-The stack attaches every service to the named `app-infra` bridge network and persists data with dedicated Docker volumes. Health checks ensure dependent services (for example the BullMQ dashboard) only start after their backing service is ready.
+- **Web App**: Next.js 15 (React 18)
+- **Admin Dashboard**: Next.js 15 (React 18)
+- **API Server**: NestJS
+- **Shared Packages**: UI components, Core utilities
 
-## Quick start
+## Architecture
 
-1. Copy the environment templates:
-   ```bash
-   cp .env.example .env
-   cp apps/web/.env.example apps/web/.env
-   cp apps/admin/.env.example apps/admin/.env
-   cp apps/api/.env.example apps/api/.env
-   ```
-2. (Optional) install pnpm locally so you can reuse the provided scripts: https://pnpm.io/installation.
-3. Bring the infrastructure online:
-   ```bash
-   pnpm docker:up
-   # or: make docker-up
-   ```
-4. Apply the Phase 2 migrations so PostgreSQL has the required schemas/extension:
-   ```bash
-   pnpm db:migrate:phase2
-   ```
-5. Start the Phase 3 connectors shim (keeps external credentials loaded and ready for your real connector processes):
-   ```bash
-   pnpm connectors:phase3
-   ```
-6. Point your web/admin/api apps at the stack using the `.env` files you created in step 1. The defaults assume the following URLs:
-   - Web: `http://localhost:3000`
-   - Admin: `http://localhost:3100`
-   - API: `http://localhost:4000`
+```
+apps/
+├── web/          # Next.js web application
+├── admin/        # Next.js admin dashboard
+└── api/          # NestJS REST API
 
-To stop the infrastructure run `pnpm docker:down` (or `make docker-down`). Tail service logs with `pnpm docker:logs` or `make docker-logs`. There are additional scripts for service-specific logs, e.g. `pnpm docker:logs:postgres`.
+packages/
+├── ui/           # Shared React UI components
+└── core/         # Shared utilities and types
+```
 
-## Environment variables
+## Prerequisites
 
-- The root `.env` file contains shared infrastructure credentials (database, Redis, OpenSearch, MinIO, AI providers, and connector tokens).
-- Each application under `apps/*/.env.example` defines runtime configuration for that specific surface:
-  - **Web**: NextAuth secrets, OAuth client ids, public URLs, analytics keys.
-  - **Admin**: Admin portal port, JWT signing material, Okta/Google OAuth ids, storage configuration.
-  - **API**: Database/Redis/OpenSearch URLs, MinIO credentials, JWT keys, and connector tokens including OpenAI/Anthropic keys.
+- Node.js >= 20.0.0
+- pnpm >= 9.0.0
+- Docker & Docker Compose (for local services)
 
-Update these files with project-specific values before copying them to `.env`.
+## Getting Started
 
-## Phase 2 migrations
+### Install Dependencies
 
-SQL files live under `scripts/migrations/phase-2/`. The helper script `scripts/migrations/phase-2/apply.sh` (invoked via `pnpm db:migrate:phase2`) iterates over every `.sql` file in order and applies it to the database specified by `POSTGRES_URL`/`DATABASE_URL`. It automatically sources the root `.env` (override with `ENV_FILE=...`) and requires the `psql` CLI that ships with PostgreSQL (`brew install postgresql`, `apt install postgresql-client`, etc.). The default migration enables the `vector` + `pgcrypto` extensions, creates the `app_public` schema, and defines a `documents` table with an IVFFlat index ready for pgvector searches.
+```bash
+pnpm install
+```
 
-If you add additional migrations, drop them in this folder with a lexical prefix (e.g., `0002_add_users.sql`) so they run deterministically.
+### Development
 
-## Phase 3 connectors
+Run all applications in development mode:
 
-The `connectors/phase-3` directory contains a lightweight runner that validates external credentials and keeps a heartbeat loop active. Replace `runner.mjs` with the real connector orchestration from Phase 3, but keep the `run.sh` contract intact so `pnpm connectors:phase3` (or `make connectors-phase3`) continues to work for the team. The script automatically sources the root `.env` (override with `ENV_FILE=...`) so the same credentials drive Docker and the connectors.
+```bash
+pnpm dev
+```
 
-Environment variables required by this runner are already listed inside `.env.example` and the per-app files. Set them before starting the script.
+Individual app development:
 
-## Helpful commands
+```bash
+pnpm --filter @monorepo/web dev
+pnpm --filter @monorepo/admin dev
+pnpm --filter @monorepo/api dev
+```
 
-| Command | Description |
-| --- | --- |
-| `pnpm docker:up` / `make docker-up` | Build and start all services with health checks |
-| `pnpm docker:down` / `make docker-down` | Stop and remove containers, networks, and volumes |
-| `pnpm docker:logs` | Tail combined logs for the stack |
-| `pnpm docker:logs:<service>` | Tail logs for a single service (postgres, redis, opensearch, minio) |
-| `pnpm db:migrate:phase2` | Apply SQL migrations from `scripts/migrations/phase-2` |
-| `pnpm connectors:phase3` | Boot the Phase 3 connector runner |
+### Building
 
-After the stack is running and migrations/connectors are loaded, your apps can use their `.env` files to connect to:
+Build all applications:
 
-- PostgreSQL: `postgresql://postgres:postgres@localhost:5432/app_db`
-- Redis: `redis://:redislocal@localhost:6379`
-- BullMQ dashboard: `http://localhost:3002` (ops / super-secret)
-- OpenSearch: `http://localhost:9200` (admin / admin)
-- MinIO: `http://localhost:9000` (minio / minio123)
+```bash
+pnpm build
+```
 
-Feel free to customize credentials in `.env` and re-run `pnpm docker:up` to recreate the stack with your own values.
+Build specific app:
+
+```bash
+pnpm --filter @monorepo/web build
+```
+
+### Testing
+
+Run all tests:
+
+```bash
+pnpm test
+```
+
+Run tests with coverage:
+
+```bash
+pnpm test:coverage
+```
+
+Run tests for specific app:
+
+```bash
+pnpm --filter @monorepo/web test
+```
+
+### Linting
+
+Lint all code:
+
+```bash
+pnpm lint
+```
+
+Lint specific app:
+
+```bash
+pnpm --filter @monorepo/web lint
+```
+
+### Type Checking
+
+Check types across the monorepo:
+
+```bash
+pnpm type-check
+```
+
+### Code Formatting
+
+Format code with Prettier:
+
+```bash
+pnpm format
+```
+
+Check formatting:
+
+```bash
+pnpm format:check
+```
+
+## Services
+
+The project includes Docker Compose for local development services:
+
+### Running Services
+
+```bash
+docker-compose up -d
+```
+
+### Services Included
+
+- **PostgreSQL 16** with pgvector extension
+- **Redis 7.2** for caching and message queues
+- **OpenSearch 2.11** for search functionality
+- **MinIO** for S3-compatible object storage
+- **BullMQ Dashboard** for job queue monitoring
+
+### Service Ports
+
+- PostgreSQL: 5432
+- Redis: 6379
+- OpenSearch: 9200, 9600
+- MinIO: 9000 (API), 9001 (Console)
+- BullMQ Dashboard: 3002
+
+### Connection Details
+
+See `.env.example` or `.env` for service credentials and configuration.
+
+## CI/CD Pipeline
+
+The CI pipeline runs on every push and pull request to `main` and `develop` branches.
+
+### Pipeline Stages
+
+1. **Setup**: Matrix configuration for apps and Node versions
+2. **Services**: PostgreSQL, Redis, OpenSearch, MinIO containers
+3. **Lint**: ESLint checks across all apps
+4. **Type Check**: TypeScript compilation checks
+5. **Test**: Unit and integration tests with coverage
+6. **Build**: Build production bundles
+7. **E2E**: Playwright E2E tests (web app)
+8. **Deploy**: Tag-based deployment stubs (AWS ECS, Fly.io)
+
+### Coverage Reports
+
+Coverage reports are automatically posted to pull requests showing:
+
+- Statement coverage percentage
+- Branch coverage percentage
+- Function coverage percentage
+- Line coverage percentage
+
+### Deployment
+
+Deployment is triggered on version tags (`v*`):
+
+- **AWS ECS**: Placeholder for AWS deployment
+- **Fly.io**: Placeholder for Fly.io deployment
+
+## Environment Variables
+
+See `.env.example` for required environment variables. Copy to `.env` for local development.
+
+```bash
+cp .env.example .env
+```
+
+## Package Manager
+
+This project uses **pnpm** for package management. Install it globally:
+
+```bash
+npm install -g pnpm@9.1.3
+```
+
+## Troubleshooting
+
+### Clear all cache and reinstall
+
+```bash
+pnpm clean
+pnpm install
+```
+
+### Reset node_modules and lockfile
+
+```bash
+rm -rf node_modules
+pnpm install
+```
+
+### Docker services not starting
+
+Check ports are available and no conflicting services:
+
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+## Contributing
+
+1. Create a feature branch: `git checkout -b feature/your-feature`
+2. Make your changes
+3. Run tests and linting: `pnpm lint && pnpm test`
+4. Commit with conventional commit messages
+5. Create a pull request
+
+## License
+
+MIT
