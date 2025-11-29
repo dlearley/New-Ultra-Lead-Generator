@@ -1,422 +1,257 @@
-# Map Territories, Alerts & Onboarding System
+# Admin Data Sources Management System
 
-A comprehensive full-stack application for managing territories, alerts, and organization onboarding with AI-powered scoring.
+Phase 7 Part 2 implementation for comprehensive data source management, feature flags, plans editor, data quality dashboard, and health monitoring.
 
 ## Features
 
-### 🗺️ Territory Management (`/map`)
-- **Map-centric UI** with Leaflet for visualization
-- **Draw Tools**:
-  - Polygon drawing for custom territories
-  - Radius-based territories
-  - State and county pickers
-- **Heatmap Overlay** for lead distribution
-- **Territory Ownership**: Assign single or multiple users to territories
-- **Persistence**: All territories synced to PostgreSQL backend
+### Data Source Management
+- Configure API keys with encrypted storage
+- Set rate limits per connector (minute/hour/day)
+- Enable/disable individual connectors
+- Real-time health monitoring
+- Support for API, Database, File, and Stream connectors
 
-### 🔔 Alert Manager (`/alerts`)
-- **Alert Creation**: Tie alerts to saved searches
-- **Delivery Channels**: Email and in-app notifications
-- **Alert Cadence**: Real-time, daily, weekly, or monthly
-- **Queue Jobs**: BullMQ integration for processing
-- **Run History**: Track alert executions and new lead counts
-- **Status Display**: Real-time monitoring of alert runs
+### Feature Flags & Plans Editor
+- Define plan tiers (Basic, Pro, Enterprise, Custom)
+- Toggle features per tenant with overrides
+- Bulk operations for plan management
+- Clone existing plans
+- Real-time feature flag propagation
 
-### 🚀 Onboarding Wizard (`/onboarding`)
-- **Multi-step Setup**: Guided wizard for organization ICP capture
-- **Org ICP Fields**:
-  - Industries (Technology, Finance, Healthcare, etc.)
-  - Geographies (North America, Europe, Asia Pacific, etc.)
-  - Deal Sizes ($1M ranges)
-  - Personas (CEO, VP Sales, CFO, etc.)
-- **AI Scoring**: Automatic scoring based on ICP criteria
-- **Persistence**: Stored in database for future reference
+### Data Quality Dashboard
+- Metrics by region and industry
+- Comprehensive quality scores (completeness, accuracy, consistency, timeliness, validity)
+- Trend analysis and historical data
+- Interactive charts with pagination and filtering
 
-## Tech Stack
+### Moderation Queue
+- Review and approve profile/data/config changes
+- Bulk approval workflows
+- Audit trail with moderator notes
+- Real-time queue updates
 
-### Backend
-- **Framework**: NestJS 10
-- **Database**: PostgreSQL with TypeORM
-- **Job Queue**: BullMQ with Redis
-- **Validation**: class-validator & class-transformer
-- **Testing**: Jest & Supertest
+### Health Monitoring
+- Real-time connector health status
+- Error logging with severity levels
+- Health trends and analytics
+- Automatic issue detection and alerting
+- WebSocket-based real-time updates
 
-### Frontend
-- **Framework**: Next.js 15 with React 19
-- **State Management**: Zustand
-- **Maps**: Leaflet & react-leaflet
+## Architecture
+
+### Backend (Node.js + TypeScript)
+- **Framework**: Express.js with TypeScript
+- **Database**: PostgreSQL with connection pooling
+- **Authentication**: JWT with bcrypt password hashing
+- **Encryption**: AES-256-GCM for sensitive data
+- **Real-time**: WebSocket server for live updates
+- **Logging**: Winston with structured logging
+- **Search**: OpenSearch integration for log analysis
+
+### Frontend (React + TypeScript)
+- **Framework**: React 18 with TypeScript
+- **UI Library**: Tailwind CSS with Headless UI
+- **State Management**: React Query for server state
+- **Routing**: React Router v6
 - **Forms**: React Hook Form
-- **HTTP Client**: Axios
-- **E2E Testing**: Playwright
-
-## Project Structure
-
-```
-.
-├── apps/
-│   ├── backend/
-│   │   ├── src/
-│   │   │   ├── database/
-│   │   │   │   └── entities/          # TypeORM entities
-│   │   │   ├── modules/
-│   │   │   │   ├── territories/
-│   │   │   │   ├── alerts/
-│   │   │   │   └── onboarding/
-│   │   │   ├── common/
-│   │   │   │   └── dtos/              # Data Transfer Objects
-│   │   │   ├── app.module.ts
-│   │   │   └── main.ts
-│   │   └── test/
-│   │       ├── territories.e2e-spec.ts
-│   │       ├── alerts.e2e-spec.ts
-│   │       └── onboarding.e2e-spec.ts
-│   └── web/
-│       ├── src/
-│       │   ├── pages/
-│       │   │   ├── map/
-│       │   │   ├── alerts/
-│       │   │   └── onboarding/
-│       │   ├── components/
-│       │   │   ├── territories/
-│       │   │   ├── alerts/
-│       │   │   └── onboarding/
-│       │   ├── stores/                # Zustand stores
-│       │   ├── lib/
-│       │   │   └── api.ts
-│       │   └── styles/
-│       └── tests/e2e/
-│           ├── territories.spec.ts
-│           ├── alerts.spec.ts
-│           └── onboarding.spec.ts
-├── package.json
-├── turbo.json
-└── README.md
-```
+- **Charts**: Recharts for data visualization
+- **Real-time**: WebSocket client integration
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL 14+
-- Redis 7+
+- PostgreSQL 12+
+- npm or yarn
 
-### Installation
+### Backend Setup
 
-1. **Install dependencies**:
+1. Navigate to backend directory:
 ```bash
-pnpm install
+cd backend
 ```
 
-2. **Setup environment variables**:
+2. Install dependencies:
 ```bash
-# Backend
-cp apps/backend/.env.example apps/backend/.env
-
-# Frontend
-cp apps/web/.env.example apps/web/.env
+npm install
 ```
 
-3. **Configure database** (in `apps/backend/.env`):
-```env
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
-DATABASE_NAME=map_alerts
+3. Copy environment variables:
+```bash
+cp .env.example .env
 ```
 
-### Running the Application
-
-**Development mode** (both backend and frontend):
+4. Update `.env` with your configuration:
 ```bash
-pnpm dev
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=admin_data_sources
+DB_USER=postgres
+DB_PASSWORD=your_password
+JWT_SECRET=your_jwt_secret
+ENCRYPTION_KEY=your_32_byte_encryption_key
 ```
 
-This will start:
-- Backend API: http://localhost:3001
-- Frontend: http://localhost:3000
-
-**Production build**:
+5. Build and start the server:
 ```bash
-pnpm build
+npm run build
+npm start
 ```
 
-### API Endpoints
-
-#### Territories
-- `POST /api/territories` - Create territory
-- `GET /api/territories` - List territories
-- `GET /api/territories/:id` - Get territory
-- `PUT /api/territories/:id` - Update territory
-- `DELETE /api/territories/:id` - Delete territory
-- `PUT /api/territories/:id/assign-owner` - Assign owner
-- `PUT /api/territories/:id/assign-owners` - Assign multiple owners
-
-#### Alerts
-- `POST /api/alerts` - Create alert
-- `GET /api/alerts` - List alerts
-- `GET /api/alerts/:id` - Get alert
-- `PUT /api/alerts/:id` - Update alert
-- `DELETE /api/alerts/:id` - Delete alert
-- `POST /api/alerts/:id/trigger` - Trigger alert run
-- `GET /api/alerts/:id/runs` - Get alert runs
-- `GET /api/alerts/:alertId/runs/:runId` - Get run status
-
-#### Onboarding
-- `GET /api/onboarding` - Get or create onboarding data
-- `PUT /api/onboarding/icp` - Update OrgICP
-- `POST /api/onboarding/complete` - Complete onboarding
-
-## Testing
-
-### Backend Tests
+For development:
 ```bash
-cd apps/backend
-
-# Unit & integration tests
-pnpm test
-
-# E2E tests
-pnpm test:e2e
+npm run dev
 ```
 
-### Frontend E2E Tests
+### Frontend Setup
+
+1. Navigate to frontend directory:
 ```bash
-cd apps/web
+cd frontend
+```
 
-# Run E2E tests
-pnpm test:e2e
+2. Install dependencies:
+```bash
+npm install
+```
 
-# Run E2E tests with UI
-pnpm test:e2e --ui
+3. Start development server:
+```bash
+npm run dev
+```
+
+4. Build for production:
+```bash
+npm run build
 ```
 
 ## Database Schema
 
-### Territories
-- `id` (UUID)
-- `organizationId` (UUID)
-- `name` (String)
-- `type` (Enum: polygon, radius, state, county)
-- `polygonCoordinates` (JSONB)
-- `radiusGeometry` (JSONB)
-- `stateCode` (String)
-- `countyCode` (String)
-- `ownerId` (UUID)
-- `ownerIds` (Array<UUID>)
-- `isActive` (Boolean)
-- Timestamps
+The application uses PostgreSQL with the following main tables:
 
-### Alerts
-- `id` (UUID)
-- `organizationId` (UUID)
-- `name` (String)
-- `description` (String)
-- `territoryId` (UUID)
-- `savedSearch` (JSONB)
-- `cadence` (Enum)
-- `deliveryChannels` (Array)
-- `recipients` (Array<String>)
-- `isActive` (Boolean)
-- `lastRunAt` (DateTime)
-- Timestamps
+- `admin_users` - User authentication and authorization
+- `data_sources` - Connector configurations with encrypted credentials
+- `feature_flags` - Feature flag definitions with tenant overrides
+- `plans` - Subscription plans and feature mappings
+- `data_quality_metrics` - Quality metrics by region/industry
+- `moderation_queue` - Pending changes awaiting approval
+- `health_logs` - System health and error logs
 
-### Alert Runs
-- `id` (UUID)
-- `alertId` (UUID)
-- `status` (Enum: pending, running, success, failed)
-- `newLeadsCount` (Integer)
-- `queueJobId` (String)
-- `errorMessage` (String)
-- `completedAt` (DateTime)
-- Timestamps
+## Security Features
 
-### Onboarding Data
-- `id` (UUID)
-- `organizationId` (UUID)
-- `orgICP` (JSONB): industries, geographies, dealSizes, personas, aiScoring
-- `isCompleted` (Boolean)
-- `completedAt` (DateTime)
-- Timestamps
+- **Encrypted Storage**: All API keys and sensitive credentials are encrypted using AES-256-GCM
+- **JWT Authentication**: Secure token-based authentication with configurable expiration
+- **Role-Based Access Control**: Granular permissions per resource and action
+- **Input Validation**: Comprehensive validation using Joi schemas
+- **CORS Protection**: Configurable cross-origin resource sharing
+- **Rate Limiting**: Built-in rate limiting per connector
+- **SQL Injection Prevention**: Parameterized queries throughout
 
-## Features Breakdown
+## API Documentation
 
-### Territory Map View
-- Interactive Leaflet map with OSM tiles
-- Territory markers with info popups
-- Sidebar with territory list and form
-- Heatmap layer for lead distribution visualization
-- Draw tools for creating polygons/radius territories
-- State/county selector for administrative boundaries
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/user/me` - Get current user
+- `PUT /api/user/profile` - Update profile
+- `PUT /api/user/password` - Change password
 
-### Alert Management
-- Create alerts tied to saved searches
-- Configure delivery channels (email, in-app)
-- Set alert cadence (real-time, daily, weekly, monthly)
-- Trigger alerts manually or via scheduler
-- BullMQ jobs process alerts asynchronously
-- Track new lead counts per alert run
-- Display run history with status and error messages
+### Data Sources
+- `GET /api/data-sources` - List data sources (with pagination)
+- `GET /api/data-sources/:id` - Get specific data source
+- `POST /api/data-sources` - Create new data source
+- `PUT /api/data-sources/:id` - Update data source
+- `DELETE /api/data-sources/:id` - Delete data source
+- `PATCH /api/data-sources/:id/toggle` - Enable/disable data source
 
-### Onboarding Wizard
-- 4-step guided setup process
-- Multi-select for industries, geographies, deal sizes, personas
-- Progress tracking and navigation
-- AI scoring calculates based on ICP factors
-- Completion status and timestamp tracking
+### Feature Flags
+- `GET /api/feature-flags` - List feature flags
+- `POST /api/feature-flags` - Create feature flag
+- `PUT /api/feature-flags/:id` - Update feature flag
+- `POST /api/feature-flags/:id/tenant-overrides` - Add tenant override
+- `DELETE /api/feature-flags/:id/tenant-overrides/:tenantId` - Remove override
 
-## API Response Examples
+### Plans
+- `GET /api/plans` - List plans
+- `POST /api/plans` - Create plan
+- `PUT /api/plans/:id` - Update plan
+- `POST /api/plans/:id/clone` - Clone plan
+- `PATCH /api/plans/:id/toggle` - Activate/deactivate plan
 
-### Create Territory
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "organizationId": "org-123",
-  "name": "California Territory",
-  "type": "state",
-  "stateCode": "CA",
-  "ownerId": "user-456",
-  "isActive": true,
-  "createdAt": "2024-01-15T10:30:00Z",
-  "updatedAt": "2024-01-15T10:30:00Z"
-}
-```
+### Data Quality
+- `GET /api/data-quality` - Get quality metrics
+- `GET /api/data-quality/summary` - Get summary statistics
+- `GET /api/data-quality/trends` - Get trend data
+- `POST /api/data-quality` - Create/update metrics
 
-### Create Alert
-```json
-{
-  "id": "alert-123",
-  "organizationId": "org-123",
-  "name": "CA Tech Companies",
-  "territoryId": "territory-123",
-  "cadence": "daily",
-  "deliveryChannels": ["email", "in_app"],
-  "lastRunAt": null,
-  "isActive": true
-}
-```
+### Moderation
+- `GET /api/moderation` - Get moderation queue
+- `PATCH /api/moderation/:id/approve` - Approve changes
+- `PATCH /api/moderation/:id/reject` - Reject changes
+- `PATCH /api/moderation/bulk-approve` - Bulk approve
 
-### Trigger Alert (creates run)
-```json
-{
-  "id": "run-123",
-  "alertId": "alert-123",
-  "status": "pending",
-  "newLeadsCount": 0,
-  "queueJobId": "job-456",
-  "createdAt": "2024-01-15T11:00:00Z"
-}
-```
+### Health Monitoring
+- `GET /api/health/logs` - Get health logs
+- `GET /api/health/summary` - Get health summary
+- `GET /api/health/trends` - Get health trends
+- `POST /api/health/logs` - Create health log
+- `PATCH /api/health/logs/:id/resolve` - Resolve health log
 
-### Complete Onboarding
-```json
-{
-  "id": "onboarding-123",
-  "organizationId": "org-123",
-  "orgICP": {
-    "industries": ["Technology", "Finance"],
-    "geographies": ["North America", "Europe"],
-    "dealSizes": ["$1M-$5M", "$5M-$10M"],
-    "personas": ["CEO", "VP Sales", "CFO"],
-    "aiScoring": {
-      "score": 78,
-      "updatedAt": "2024-01-15T12:00:00Z",
-      "factors": {
-        "industryScore": 60,
-        "geoScore": 75,
-        "dealSizeScore": 80,
-        "personaScore": 100
-      }
-    }
-  },
-  "isCompleted": true,
-  "completedAt": "2024-01-15T12:00:00Z"
-}
-```
+## Real-time Features
 
-## Development Workflow
+The system uses WebSockets for real-time updates:
 
-1. **Start development servers**:
-```bash
-pnpm dev
-```
+- **Health Updates**: Live connector health status changes
+- **Data Quality Updates**: Real-time quality metric changes
+- **System Alerts**: Immediate notifications for critical issues
+- **Moderation Updates**: Live queue status changes
 
-2. **Make changes** to backend or frontend
-
-3. **Run tests** to verify:
-```bash
-# Backend
-cd apps/backend && pnpm test:e2e
-
-# Frontend
-cd apps/web && pnpm test:e2e
-```
-
-4. **Lint and format**:
-```bash
-pnpm lint
-pnpm format
-```
-
-5. **Build for production**:
-```bash
-pnpm build
-```
+WebSocket endpoint: `ws://localhost:3001` (adjust for your environment)
 
 ## Deployment
 
-### Docker Compose Setup
-```yaml
-version: '3.8'
+### Production Considerations
 
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: map_alerts
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+1. **Environment Variables**: Ensure all secrets are properly configured
+2. **Database**: Use a managed PostgreSQL service with backups
+3. **SSL/TLS**: Enable HTTPS for all API endpoints
+4. **Monitoring**: Set up application monitoring and alerting
+5. **Scaling**: Consider horizontal scaling with load balancers
+6. **Backups**: Regular database and configuration backups
 
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
+### Docker Deployment
 
-  backend:
-    build: ./apps/backend
-    ports:
-      - "3001:3001"
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      DATABASE_HOST: postgres
-      REDIS_HOST: redis
-
-  frontend:
-    build: ./apps/web
-    ports:
-      - "3000:3000"
-
-volumes:
-  postgres_data:
+```dockerfile
+# Backend Dockerfile example
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY dist ./dist
+EXPOSE 3001
+CMD ["node", "dist/index.js"]
 ```
 
-## Acceptance Criteria
+## Testing
 
-✅ **Territories persist to backend**: All territories are stored in PostgreSQL and synced  
-✅ **Alerts trigger queue jobs**: BullMQ processes alert runs  
-✅ **Alert status display**: Run history shows status, leads count, timestamps  
-✅ **Onboarding updates OrgICP**: Schema stores industries, geos, deal size, personas  
-✅ **E2E tests cover each flow**: Territory, alert, and onboarding E2E tests included  
+```bash
+# Backend tests
+cd backend
+npm test
+
+# Frontend tests
+cd frontend
+npm test
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
 
 ## License
 
-Proprietary - All rights reserved
-
-## Support
-
-For issues or questions, please refer to the documentation or contact the development team.
+This project is part of the Admin Data Sources Management System implementation.
