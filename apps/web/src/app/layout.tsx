@@ -1,35 +1,27 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "@prospecting-platform/ui";
-import "./globals.css";
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { Toaster } from 'react-hot-toast';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Prospecting Platform - Find Your Next Customers",
-  description: "AI-powered prospecting search to discover high-potential B2B leads",
+  title: 'CRM Integration Dashboard',
+  description: 'Manage CRM integrations and lead synchronization',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-        <Toaster />
+      <body className={inter.className}>
+        <div className="min-h-screen bg-gray-50">
+          {children}
+        </div>
+        <Toaster position="top-right" />
       </body>
     </html>
   );

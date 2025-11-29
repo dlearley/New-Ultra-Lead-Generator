@@ -1,9 +1,10 @@
 {
-  "name": "admin-billing-audit",
+  "name": "crm-integration-monorepo",
   "version": "1.0.0",
-  "description": "Admin Billing & Audit module for phase 7 part 3",
+  "description": "CRM Integration Platform with Salesforce, HubSpot, and Pipedrive",
   "private": true,
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
@@ -11,10 +12,22 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "type-check": "turbo run type-check"
+    "type-check": "turbo run type-check",
+    "setup": "npm install && cd apps/api && npx prisma generate && npx prisma db push",
+    "start:api": "cd apps/api && npm run dev",
+    "start:web": "cd apps/web && npm run dev",
+    "test:api": "cd apps/api && npm test",
+    "test:web": "cd apps/web && npm test"
   },
   "devDependencies": {
-    "turbo": "^1.10.0",
-    "typescript": "^5.3.0"
+    "turbo": "^1.10.16",
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2",
+    "eslint": "^8.50.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "@typescript-eslint/parser": "^6.7.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -1,260 +1,227 @@
-# Admin Billing & Audit Module (Phase 7 Part 3)
+# CRM Integration Platform
 
-A comprehensive admin panel for managing billing, usage metrics, audit logs, and AI model configurations with RBAC support.
+A comprehensive CRM integration platform that enables seamless lead synchronization between your business applications and popular CRM systems including Salesforce, HubSpot, and Pipedrive.
 
 ## Features
 
-### 1. Billing & Usage Module
-- Surface billing searches and filters per organization
-- Export billing data in JSON/CSV formats
-- Track usage alerts for organizations near API call limits
-- Mark organizations as trial/paid/delinquent
-- Visualize usage trends and spending patterns
-- Stub Stripe integration for payment processing
+### Core Functionality
+- **Multi-CRM Support**: Integrate with Salesforce, HubSpot, and Pipedrive
+- **Field Mapping UI**: Intuitive interface to map business lead fields to CRM fields
+- **Queue-Based Processing**: BullMQ for reliable, rate-limited sync processing
+- **Real-time Status Dashboard**: Monitor sync jobs and view detailed logs
+- **Error Handling**: Comprehensive error handling with retry mechanisms
+- **Analytics Dashboard**: Visualize sync performance and statistics
 
-### 2. Audit & Compliance Module
-- Searchable audit logs by organization, user, action, and date range
-- Export audit logs in JSON/CSV formats
-- Track all administrative actions with timestamps
-- Monitor system activity and compliance
-- Detailed statistics on audit events
+### Technical Features
+- **RESTful API**: Modern Express.js API with TypeScript
+- **Rate Limiting**: Configurable rate limiting for all endpoints
+- **Validation**: Zod-based request validation
+- **Database**: PostgreSQL with Prisma ORM
+- **Queue System**: Redis-backed BullMQ for async processing
+- **Testing**: Comprehensive test suite with mocked CRM APIs
+- **Modern UI**: Next.js dashboard with Tailwind CSS
 
-### 3. AI Model Management
-- Set active scoring model versions per organization
-- Toggle AI model providers on/off
-- Monitor model latency and error rates
-- Track model performance metrics
-- Record model usage metrics over time
+## Architecture
 
-### 4. RBAC & Security
-- Role-based access control with permission gating
-- Structured logging middleware for all admin operations
-- JWT authentication support
-- Predefined roles: admin, billing_manager, compliance_officer, ai_model_manager, viewer
-- User context tracking in all operations
+### Backend (`apps/api`)
+- **Framework**: Express.js with TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Queue**: BullMQ with Redis
+- **Authentication**: JWT-based (headers)
+- **Rate Limiting**: Express-rate-limit
+- **Logging**: Winston
 
-## Project Structure
+### Frontend (`apps/web`)
+- **Framework**: Next.js 14 with App Router
+- **Styling**: Tailwind CSS
+- **State Management**: React Query
+- **Forms**: React Hook Form
+- **UI Components**: Headless UI + Heroicons
 
-```
-packages/
-├── api/                        # NestJS Backend API
-│   ├── src/
-│   │   ├── controllers/        # API endpoints
-│   │   ├── services/           # Business logic
-│   │   ├── entities/           # Database schemas
-│   │   ├── dtos/               # Data transfer objects
-│   │   ├── guards/             # Auth & RBAC guards
-│   │   ├── decorators/         # Custom decorators
-│   │   ├── middleware/         # Express middleware
-│   │   ├── app.module.ts       # Main module
-│   │   └── main.ts             # Entry point
-│   └── package.json
-│
-└── web/                        # Next.js Frontend
-    ├── src/
-    │   ├── pages/
-    │   │   ├── admin/          # Admin pages
-    │   │   │   ├── billing.tsx
-    │   │   │   ├── audit.tsx
-    │   │   │   └── ai-models.tsx
-    │   │   ├── _app.tsx
-    │   │   └── _document.tsx
-    │   ├── layouts/            # Layout components
-    │   ├── components/         # Reusable components
-    │   └── styles/             # Global styles
-    └── package.json
-```
-
-## API Endpoints
-
-### Billing Endpoints
-- `POST /admin/billing` - Create billing record
-- `GET /admin/billing/:organizationId` - Get billing by org
-- `PUT /admin/billing/:organizationId` - Update billing
-- `POST /admin/billing/search` - Search billings
-- `POST /admin/billing/export` - Export billing data
-- `GET /admin/billing/alerts/near-limit` - Get orgs near limit
-
-### Audit Log Endpoints
-- `POST /admin/audit-logs/search` - Search audit logs
-- `GET /admin/audit-logs/organization/:organizationId` - Get org logs
-- `GET /admin/audit-logs/user/:organizationId/:userId` - Get user logs
-- `GET /admin/audit-logs/action/:organizationId/:action` - Get logs by action
-- `POST /admin/audit-logs/export` - Export audit logs
-- `GET /admin/audit-logs/stats/:organizationId` - Get audit stats
-
-### AI Model Endpoints
-- `POST /admin/ai-models` - Create AI model
-- `GET /admin/ai-models/:id` - Get model by ID
-- `GET /admin/ai-models/organization/:organizationId/all` - Get org models
-- `GET /admin/ai-models/organization/:organizationId/active` - Get active model
-- `PUT /admin/ai-models/:id` - Update model
-- `POST /admin/ai-models/switch-active` - Switch active model
-- `POST /admin/ai-models/toggle-provider` - Toggle provider
-- `GET /admin/ai-models/organization/:organizationId/metrics` - Get metrics
-- `POST /admin/ai-models/:id/record-metrics` - Record metrics
-- `DELETE /admin/ai-models/:id` - Delete model
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL 12+
-- pnpm (recommended)
+- PostgreSQL
+- Redis
+- npm or yarn
 
 ### Installation
 
+1. **Clone and install dependencies**
 ```bash
-# Install dependencies
-pnpm install
-
-# Create .env files
-cp packages/api/.env.example packages/api/.env
-cp packages/web/.env.example packages/web/.env
-
-# Run database migrations
-pnpm --filter api run migrate
-
-# Start development servers
-pnpm dev
+git clone <repository-url>
+cd crm-integration-platform
+npm install
 ```
+
+2. **Environment Setup**
+```bash
+# Copy environment templates
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.local.example apps/web/.env.local
+
+# Configure your database and Redis connections
+# Edit apps/api/.env with your settings
+```
+
+3. **Database Setup**
+```bash
+cd apps/api
+npx prisma generate
+npx prisma db push
+```
+
+4. **Start Development Servers**
+```bash
+# Start API server (port 3001)
+npm run dev
+
+# In another terminal, start web app (port 3000)
+cd apps/web
+npm run dev
+```
+
+5. **Access the Application**
+- Web Dashboard: http://localhost:3000
+- API Documentation: http://localhost:3001/api/integrations/health
+
+## API Endpoints
+
+### CRM Push Operations
+- `POST /api/integrations/crm/push-leads` - Push leads to CRM
+- `GET /api/integrations/crm/sync-jobs` - List sync jobs
+- `GET /api/integrations/crm/sync-jobs/:id` - Get specific sync job
+- `POST /api/integrations/crm/test-connection` - Test CRM connection
+
+### Field Mapping
+- `POST /api/integrations/field-mappings` - Create field mappings
+- `GET /api/integrations/field-mappings` - List field mappings
+- `DELETE /api/integrations/field-mappings/:id` - Delete field mapping
+- `GET /api/integrations/field-mappings/crm-fields/:crmType` - Get available CRM fields
+- `POST /api/integrations/field-mappings/validate` - Validate field mappings
+- `GET /api/integrations/field-mappings/standard-fields` - Get standard business lead fields
+
+## Configuration
+
+### CRM Setup
+
+#### Salesforce
+1. Create a Connected App in Salesforce Setup
+2. Enable OAuth 2.0 with specified callback URL
+3. Configure Consumer Key, Consumer Secret, and Security Token
+4. Set up user credentials
+
+#### HubSpot
+1. Create a Private App in HubSpot
+2. Configure required scopes (crm.objects.contacts.write)
+3. Generate access token
+4. Configure integration
+
+#### Pipedrive
+1. Generate API token from Company Settings > API
+2. Note company domain
+3. Configure integration
+
+## Testing
+
+### Backend Tests
+```bash
+cd apps/api
+npm test
+```
+
+### Frontend Tests
+```bash
+cd apps/web
+npm test
+```
+
+### Integration Tests
+The test suite includes comprehensive mocked CRM API tests for all adapters:
+- Salesforce adapter tests
+- HubSpot adapter tests  
+- Pipedrive adapter tests
+- Field mapping validation tests
+- Queue processing tests
+
+## Deployment
 
 ### Environment Variables
+Key environment variables for production:
 
-**API (.env)**
-```
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
-DATABASE_NAME=admin_billing
-PORT=3001
-NODE_ENV=development
-STRIPE_API_KEY=sk_test_...
-CORS_ORIGIN=http://localhost:3000
-```
+**API Server:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_HOST`, `REDIS_PORT` - Redis connection
+- `JWT_SECRET` - Authentication secret
+- `ENCRYPTION_KEY` - For credential encryption
 
-**Web (.env.local)**
-```
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-API_URL=http://localhost:3001/api
-```
+**Web App:**
+- `NEXT_PUBLIC_API_URL` - API server URL
+- `NEXT_PUBLIC_ORGANIZATION_ID` - Organization identifier
 
-## Database Schema
-
-### Billing Entity
-- id (UUID, PK)
-- organizationId (UUID, FK)
-- status (enum: trial, paid, delinquent)
-- plan (enum: starter, professional, enterprise)
-- stripeCustomerId (string)
-- stripeSubscriptionId (string)
-- monthlySpend (decimal)
-- apiCallsUsed (integer)
-- apiCallsLimit (integer)
-- usersCount (integer)
-- projectsCount (integer)
-
-### Usage Metrics Entity
-- id (UUID, PK)
-- organizationId (UUID, FK)
-- metricType (enum: api_calls, search_queries, data_export, storage_gb, seats)
-- value (integer)
-- limit (integer)
-- cost (decimal)
-- dateRecorded (date)
-
-### Audit Log Entity
-- id (UUID, PK)
-- organizationId (UUID, FK)
-- userId (UUID)
-- action (enum: create, read, update, delete, export, login, logout, etc.)
-- resourceType (enum: user, organization, billing, usage, ai_model, etc.)
-- resourceId (UUID)
-- description (text)
-- status (string)
-- ipAddress (string)
-- userAgent (string)
-
-### AI Model Entity
-- id (UUID, PK)
-- organizationId (UUID, FK)
-- name (string)
-- provider (enum: openai, anthropic, cohere, local)
-- version (string)
-- status (enum: active, inactive, deprecated, beta)
-- isActive (boolean)
-- averageLatencyMs (decimal)
-- errorRate (decimal)
-- totalRequests (integer)
-- failedRequests (integer)
-- config (JSON)
-
-## RBAC Permissions
-
-### Admin
-- All permissions
-
-### Billing Manager
-- billing:read, billing:update, billing:search, billing:export
-- audit:read
-
-### Compliance Officer
-- audit:read, audit:search, audit:export
-- billing:read
-
-### AI Model Manager
-- ai-model:create, ai-model:read, ai-model:update, ai-model:delete
-- audit:read
-
-### Viewer
-- billing:read, audit:read, ai-model:read
-
-## Structured Logging
-
-All admin operations are logged with the following structure:
-```json
-{
-  "timestamp": "2024-01-01T12:00:00Z",
-  "method": "POST",
-  "path": "/admin/billing",
-  "statusCode": 201,
-  "duration": "45ms",
-  "userId": "user-id",
-  "organizationId": "org-id",
-  "userAgent": "...",
-  "ipAddress": "..."
-}
-```
-
-## Development
-
-### Running Tests
+### Production Build
 ```bash
-pnpm test
+# Build API
+cd apps/api
+npm run build
+
+# Build Web App
+cd apps/web
+npm run build
 ```
 
-### Linting
-```bash
-pnpm lint
-```
+## Rate Limiting
 
-### Building
-```bash
-pnpm build
-```
+The application implements multi-tier rate limiting:
+- **General API**: 100 requests per 15 minutes per IP
+- **CRM Push**: 10 requests per minute per organization
+- **Field Mapping**: 50 requests per 5 minutes per organization
 
-## Acceptance Criteria Met
+## Queue Processing
 
-✅ Usage data visualized in charts and graphs
-✅ Billing status updates saved to database
-✅ Audit log filters work (org, user, action, date range)
-✅ Export functionality works (JSON, CSV)
-✅ AI model switches propagate to backend config
-✅ RBAC gating enforced on all endpoints
-✅ Structured logging implemented
-✅ Stripe integration stubbed
+BullMQ processes CRM sync jobs with the following features:
+- **Retry Logic**: Up to 3 attempts with exponential backoff
+- **Concurrency**: Configurable worker concurrency (default: 5)
+- **Job Retention**: 100 completed jobs, 50 failed jobs
+- **Error Handling**: Comprehensive error logging and retry mechanisms
+
+## Monitoring
+
+### Health Checks
+- API health endpoint: `/api/integrations/health`
+- Database connectivity checks
+- Redis connectivity checks
+- CRM connection status monitoring
+
+### Logging
+- Structured JSON logging with Winston
+- Request/response logging
+- Error tracking with stack traces
+- Performance metrics
+
+## Security
+
+- Input validation with Zod schemas
+- SQL injection prevention via Prisma ORM
+- Rate limiting to prevent abuse
+- Credential encryption for storage
+- CORS configuration
+- Security headers with Helmet
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Run the test suite
+6. Submit a pull request
 
 ## License
 
-Proprietary - All rights reserved
+This project is licensed under the MIT License.
+
+## Support
+
+For support and questions, please open an issue in the repository or contact the development team.

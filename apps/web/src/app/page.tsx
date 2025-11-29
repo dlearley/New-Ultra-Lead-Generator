@@ -1,40 +1,72 @@
-import Link from "next/link";
+import Link from 'next/link';
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-zinc-50 to-white px-4 py-24 dark:from-zinc-950 dark:to-zinc-900">
-      <div className="mx-auto max-w-3xl text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-500">
-          Prospecting Workbench
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 bg-primary-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-2xl">CRM</span>
+          </div>
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          CRM Integration Platform
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Manage your CRM integrations and lead synchronization
         </p>
-        <h1 className="mt-6 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-6xl">
-          Zero in on your next high-converting accounts
-        </h1>
-        <p className="mt-6 text-lg text-zinc-600 dark:text-zinc-300">
-          Use the AI-assisted search experience to mix natural language queries with structured filters,
-          visualize prospects on a live map, manage lead lists, and maintain data quality with powerful tools.
-        </p>
-        <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-          <Link
-            href="/search"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-900 px-8 text-base font-medium text-white shadow-lg transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
-          >
-            Launch Search Workspace
-          </Link>
-          <Link
-            href="/lists"
-            className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-base font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
-          >
-            Manage Lead Lists
-          </Link>
-          <Link
-            href="/data-tools"
-            className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-base font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
-          >
-            Data Tools
-          </Link>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="space-y-4">
+            <Link
+              href="/dashboard"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              Go to Dashboard
+            </Link>
+          </div>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Features</span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-3">
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-600">Salesforce Integration</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-600">HubSpot Integration</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-600">Pipedrive Integration</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-600">Field Mapping Configuration</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-600">Real-time Sync Status</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-600">Analytics Dashboard</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

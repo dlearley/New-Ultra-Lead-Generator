@@ -2,14 +2,16 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  typescript: {
-    tsconfigPath: './tsconfig.json',
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.externals.push('pino-pretty', 'lokijs', 'encoding');
-    }
-    return config;
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/:path*`,
+      },
+    ];
   },
 };
 

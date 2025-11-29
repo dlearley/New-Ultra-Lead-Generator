@@ -1,158 +1,55 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  /* Design Tokens - Colors */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
-  --color-brand-950: #172554;
-
-  --color-neutral-0: #ffffff;
-  --color-neutral-50: #fafafa;
-  --color-neutral-100: #f5f5f5;
-  --color-neutral-200: #e5e5e5;
-  --color-neutral-300: #d4d4d4;
-  --color-neutral-400: #a3a3a3;
-  --color-neutral-500: #737373;
-  --color-neutral-600: #525252;
-  --color-neutral-700: #404040;
-  --color-neutral-800: #262626;
-  --color-neutral-900: #171717;
-  --color-neutral-950: #0a0a0a;
-
-  --color-ai-primary: #8b5cf6;
-  --color-ai-secondary: #a78bfa;
-  --color-ai-accent: #c4b5fd;
-
-  /* Design Tokens - Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
-
-  /* Design Tokens - Typography */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
-
-  /* Breakpoints */
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-}
-
-@theme inline {
-  --color-background: var(--color-neutral-0);
-  --color-foreground: var(--color-neutral-900);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--color-neutral-950);
-    --color-foreground: var(--color-neutral-50);
+@layer base {
+  html {
+    font-family: system-ui, sans-serif;
   }
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Accessibility Focus Styles */
-*:focus-visible {
-  outline: 2px solid var(--color-brand-500);
-  outline-offset: 2px;
-}
-
-/* Skip to main content link for accessibility */
-.skip-to-main {
-  position: absolute;
-  top: -40px;
-  left: 6px;
-  background: var(--color-brand-600);
-  color: white;
-  padding: 8px;
-  text-decoration: none;
-  border-radius: 4px;
-  z-index: 1000;
-}
-
-.skip-to-main:focus {
-  top: 6px;
-}
-
-/* Responsive utilities */
-@media (max-width: 768px) {
-  .mobile-hidden {
-    display: none;
+@layer components {
+  .btn {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
-}
 
-@media (min-width: 769px) {
-  .desktop-hidden {
-    display: none;
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
   }
-}
 
-/* Loading animations */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+  .btn-secondary {
+    @apply btn bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500;
+  }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  .btn-outline {
+    @apply btn border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-primary-500;
+  }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
+  .card {
+    @apply bg-white overflow-hidden shadow rounded-lg;
+  }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
+  .card-header {
+    @apply px-4 py-5 sm:px-6 border-b border-gray-200;
+  }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
+  .card-body {
+    @apply px-4 py-5 sm:p-6;
+  }
 
-/* AI gradient background */
-.ai-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
+  .form-input {
+    @apply block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
+  }
 
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
+  .form-label {
+    @apply block text-sm font-medium text-gray-700;
+  }
+
+  .form-error {
+    @apply mt-1 text-sm text-red-600;
   }
 }
