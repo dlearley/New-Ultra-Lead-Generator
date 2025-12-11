@@ -1,7 +1,7 @@
 {
-  "name": "crm-integration-monorepo",
+  "name": "ultra-lead-generator",
   "version": "1.0.0",
-  "description": "CRM Integration Platform with Salesforce, HubSpot, and Pipedrive",
+  "description": "B2B Lead Prospecting Platform with AI-powered search, OpenSearch integration, and CRM push capabilities",
   "private": true,
   "workspaces": [
     "apps/*",
