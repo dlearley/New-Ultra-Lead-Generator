@@ -1,4 +1,5 @@
 export interface BusinessLeadData {
+  id?: string;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -50,6 +51,7 @@ export interface CrmPushResult {
 }
 
 export interface SyncJobData {
+  id?: string;
   organizationId: string;
   businessLeadId: string;
   crmType: 'SALESFORCE' | 'HUBSPOT' | 'PIPEDRIVE';

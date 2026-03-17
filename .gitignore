@@ -42,3 +42,13 @@ htmlcov/
 database.db
 *.sqlite3
 celerybeat-schedule
+
+# Node.js
+node_modules/
+.next/
+.turbo/
+dist/
+
+# Environment
+.env.local
+.env.*.local

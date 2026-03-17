@@ -63,7 +63,7 @@ export class FieldMappingService {
             targetField: mapping.targetField,
             fieldType: mapping.fieldType as any,
             isRequired: mapping.isRequired || false,
-            defaultValue: mapping.defaultValue,
+            defaultValue: mapping.defaultValue || null,
           },
         });
         createdMappings.push(created);

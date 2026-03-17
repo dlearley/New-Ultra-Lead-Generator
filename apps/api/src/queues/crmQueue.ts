@@ -1,4 +1,4 @@
-import { Queue, Worker, Job, QueueScheduler } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { CrmAdapterFactory } from '../adapters';
@@ -12,8 +12,7 @@ const redisConnection = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
+  maxRetriesPerRequest: null,
 });
 
 // Queue configuration
@@ -28,11 +27,6 @@ export const crmSyncQueue = new Queue('crm-sync', {
       delay: 2000,
     },
   },
-});
-
-// Queue scheduler to handle delayed retries
-export const crmSyncScheduler = new QueueScheduler('crm-sync', {
-  connection: redisConnection,
 });
 
 // Worker to process CRM sync jobs
@@ -51,7 +45,7 @@ export const crmSyncWorker = new Worker(
     try {
       // Update job status to processing
       await prisma.syncJob.update({
-        where: { id: job.data.id || '' },
+        where: { id: job.id || '' },
         data: { status: 'PROCESSING' },
       });
 
@@ -137,7 +131,7 @@ export const crmSyncWorker = new Worker(
       }
 
       await prisma.syncJob.update({
-        where: { id: job.data.id || '' },
+        where: { id: job.id || '' },
         data: updateData,
       });
 
@@ -167,7 +161,7 @@ export const crmSyncWorker = new Worker(
 
       // Update job status to failed
       await prisma.syncJob.update({
-        where: { id: job.data.id || '' },
+        where: { id: job.id || '' },
         data: {
           status: 'FAILED',
           completedAt: new Date(),
@@ -210,7 +204,6 @@ crmSyncWorker.on('error', (error: Error) => {
 process.on('SIGINT', async () => {
   logger.info('Shutting down CRM sync worker...');
   await crmSyncWorker.close();
-  await crmSyncScheduler.close();
   await crmSyncQueue.close();
   await redisConnection.quit();
   await prisma.$disconnect();
@@ -220,7 +213,6 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   logger.info('Shutting down CRM sync worker...');
   await crmSyncWorker.close();
-  await crmSyncScheduler.close();
   await crmSyncQueue.close();
   await redisConnection.quit();
   await prisma.$disconnect();
