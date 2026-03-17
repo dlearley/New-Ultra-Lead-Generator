@@ -1,68 +1,72 @@
 version: '3.8'
 
 services:
-  postgres:
+  postgres-ultra:
     image: postgres:14
+    container_name: ultra-postgres
     environment:
-      POSTGRES_USER: webhook_user
-      POSTGRES_PASSWORD: webhook_pass
-      POSTGRES_DB: webhooks_db
+      POSTGRES_USER: ultra_user
+      POSTGRES_PASSWORD: ultra_pass
+      POSTGRES_DB: ultra_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ultra_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U webhook_user"]
+      test: ["CMD-SHELL", "pg_isready -U ultra_user"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
+  redis-ultra:
     image: redis:6
+    container_name: ultra-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
-      - redis_data:/data
+      - ultra_redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  api:
+  api-ultra:
     build: .
+    container_name: ultra-api
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://webhook_user:webhook_pass@postgres:5432/webhooks_db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      DATABASE_URL: postgresql://ultra_user:ultra_pass@postgres-ultra:5432/ultra_db
+      REDIS_URL: redis://redis-ultra:6379/0
+      CELERY_BROKER_URL: redis://redis-ultra:6379/1
+      CELERY_RESULT_BACKEND: redis://redis-ultra:6379/2
     volumes:
       - .:/app
     depends_on:
-      postgres:
+      postgres-ultra:
         condition: service_healthy
-      redis:
+      redis-ultra:
         condition: service_healthy
 
-  worker:
+  worker-ultra:
     build: .
+    container_name: ultra-worker
     command: celery -A app.worker.celery_app worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql://webhook_user:webhook_pass@postgres:5432/webhooks_db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      DATABASE_URL: postgresql://ultra_user:ultra_pass@postgres-ultra:5432/ultra_db
+      REDIS_URL: redis://redis-ultra:6379/0
+      CELERY_BROKER_URL: redis://redis-ultra:6379/1
+      CELERY_RESULT_BACKEND: redis://redis-ultra:6379/2
     volumes:
       - .:/app
     depends_on:
-      postgres:
+      postgres-ultra:
         condition: service_healthy
-      redis:
+      redis-ultra:
         condition: service_healthy
 
 volumes:
-  postgres_data:
-  redis_data:
+  ultra_postgres_data:
+  ultra_redis_data:

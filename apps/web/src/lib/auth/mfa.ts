@@ -1,4 +1,4 @@
-import { authenticator } from 'otplib'
+import { authenticator } from '@otplib/preset-default'
 import speakeasy from 'speakeasy'
 import qrcode from 'qrcode'
 import { prisma } from '@/lib/prisma'

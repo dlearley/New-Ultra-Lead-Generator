@@ -30,8 +30,15 @@ export function ResultsTable({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 w-full" />
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="mt-2 h-4 w-2/3" />
+            <div className="mt-4 flex gap-2">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -39,13 +46,8 @@ export function ResultsTable({
 
   if (prospects.length === 0) {
     return (
-      <div className="flex h-96 flex-col items-center justify-center text-center">
-        <div className="text-lg font-medium text-zinc-900 dark:text-zinc-50">
-          No results found
-        </div>
-        <p className="mt-2 text-sm text-zinc-500">
-          Try adjusting your filters or search query
-        </p>
+      <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-zinc-600 dark:text-zinc-400">No prospects found</p>
       </div>
     );
   }
@@ -96,13 +98,6 @@ export function ResultsTable({
             AI Score
             <ArrowUpDown className="h-3 w-3" />
           </button>
-          <button
-            onClick={() => onSortChange("name")}
-            className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-50"
-          >
-            Name
-            <ArrowUpDown className="h-3 w-3" />
-          </button>
         </div>
         {selectedIds.length > 0 && (
           <div className="text-sm text-zinc-500">
@@ -149,76 +144,24 @@ export function ResultsTable({
                 )}
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                      {prospect.name}
-                    </h3>
-                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                      {prospect.description}
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge variant={leadScore.variant}>
-                        <TrendingUp className="mr-1 h-3 w-3" />
-                        {leadScore.label} {prospect.aiLeadScore}
-                      </Badge>
-                      <Badge variant="secondary">{prospect.industry}</Badge>
-                      <Badge variant="secondary">{prospect.ownership}</Badge>
-                      <Badge variant="secondary">{prospect.businessType}</Badge>
-                      {prospect.isHiring && (
-                        <Badge variant="info">🔥 Hiring</Badge>
-                      )}
-                    </div>
+                    {prospect.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    {prospect.description}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Badge variant={leadScore.variant}>
+                      <TrendingUp className="mr-1 h-3 w-3" />
+                      {leadScore.label} {prospect.aiLeadScore}
+                    </Badge>
+                    <Badge variant="secondary">{prospect.industry}</Badge>
+                    <Badge variant="secondary">{prospect.ownership}</Badge>
+                    <Badge variant="secondary">{prospect.businessType}</Badge>
+                    {prospect.isHiring && (
+                      <Badge variant="info">Hiring</Badge>
+                    )}
                   </div>
                 </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <DollarSign className="h-4 w-4 text-zinc-400" />
-                    <div>
-                      <div className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {formatRevenue(prospect.revenueRange)}
-                      </div>
-                      <div className="text-xs text-zinc-500">Revenue</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-zinc-400" />
-                    <div>
-                      <div className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {formatEmployees(prospect.employeesRange)}
-                      </div>
-                      <div className="text-xs text-zinc-500">Employees</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Star className="h-4 w-4 text-zinc-400" />
-                    <div>
-                      <div className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {prospect.reviewRating.toFixed(1)} ({prospect.reviewCount})
-                      </div>
-                      <div className="text-xs text-zinc-500">Reviews</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div>
-                      <div className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {prospect.location.city}, {prospect.location.state}
-                      </div>
-                      <div className="text-xs text-zinc-500">Location</div>
-                    </div>
-                  </div>
-                </div>
-
-                {prospect.techStack.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {prospect.techStack.map((tech) => (
-                      <span
-                        key={tech}
-                        className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="flex flex-col items-end gap-2">
@@ -227,6 +170,57 @@ export function ResultsTable({
                 </Button>
               </div>
             </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="flex items-center gap-2 text-sm">
+                <DollarSign className="h-4 w-4 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                    {formatRevenue(prospect.revenueRange)}
+                  </div>
+                  <div className="text-xs text-zinc-500">Revenue</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Users className="h-4 w-4 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                    {formatEmployees(prospect.employeesRange)}
+                  </div>
+                  <div className="text-xs text-zinc-500">Employees</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Star className="h-4 w-4 text-zinc-400" />
+                <div>
+                  <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                    {prospect.reviewRating.toFixed(1)} ({prospect.reviewCount})
+                  </div>
+                  <div className="text-xs text-zinc-500">Reviews</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <div>
+                  <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                    {prospect.location.city}, {prospect.location.state}
+                  </div>
+                  <div className="text-xs text-zinc-500">Location</div>
+                </div>
+              </div>
+            </div>
+
+            {prospect.techStack.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {prospect.techStack.map((tech) => (
+                  <span
+                    key={tech}
+                    className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
