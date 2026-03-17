@@ -25,7 +25,53 @@ model Organization {
   // Sync jobs
   syncJobs SyncJob[]
 
+  // Users
+  users User[]
+
   @@map("organizations")
+}
+
+model User {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  email          String        @unique
+  passwordHash   String        // bcrypt hashed password
+  firstName      String?
+  lastName       String?
+  role           UserRole      @default(USER)
+  isActive       Boolean       @default(true)
+  
+  // MFA
+  mfaSecret      String?       // TOTP secret
+  mfaEnabled     Boolean       @default(false)
+  
+  // Refresh tokens
+  refreshTokens  RefreshToken[]
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
 }
 
 model CrmConfiguration {
