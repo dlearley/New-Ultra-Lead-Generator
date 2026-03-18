@@ -15,6 +15,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { OutreachModule } from './outreach/outreach.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AIEngineModule } from './ai-engine/ai-engine.module';
+import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -35,6 +36,7 @@ import { PrismaService } from './services/prisma.service';
     OutreachModule,
     AnalyticsModule,
     AIEngineModule,
+    OnboardingModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
