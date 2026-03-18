@@ -5,6 +5,10 @@ import { DashboardService } from './dashboards/dashboard.service';
 import { AIInsightsService } from './insights/ai-insights.service';
 import { AttributionService } from './attribution/attribution.service';
 import { FunnelService } from './funnels/funnel.service';
+import { ReportsService } from './reports/reports.service';
+import { BenchmarkingService } from './benchmarks/benchmarking.service';
+import { ForecastingService } from './forecasts/forecasting.service';
+import { SavedFiltersService } from './filters/saved-filters.service';
 
 interface UserPayload {
   userId: string;
@@ -21,6 +25,10 @@ export class AnalyticsController {
     private readonly aiInsightsService: AIInsightsService,
     private readonly attributionService: AttributionService,
     private readonly funnelService: FunnelService,
+    private readonly reportsService: ReportsService,
+    private readonly benchmarkingService: BenchmarkingService,
+    private readonly forecastingService: ForecastingService,
+    private readonly savedFiltersService: SavedFiltersService,
   ) {}
 
   // ============================================================
@@ -291,6 +299,225 @@ export class AnalyticsController {
     return this.funnelService.getCohortAnalysis(
       user.organizationId,
       period || 'monthly',
+    );
+  }
+
+  // ============================================================
+  // REPORTS
+  // ============================================================
+
+  @Post('reports')
+  async createReport(
+    @Body() dto: any,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.reportsService.createReport(user.organizationId, user.userId, dto);
+  }
+
+  @Get('reports')
+  async getReports(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.reportsService.getReports(user.organizationId);
+  }
+
+  @Get('reports/:id')
+  async getReport(
+    @Param('id') id: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.reportsService.getReport(user.organizationId, id);
+  }
+
+  @Post('reports/:id/generate')
+  async generateReport(
+    @Param('id') id: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.reportsService.generateReport(user.organizationId, id);
+  }
+
+  @Post('reports/:id/export')
+  async exportReport(
+    @Param('id') id: string,
+    @Body() dto: { format?: 'csv' | 'xlsx' | 'pdf' },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.reportsService.exportReport(
+      user.organizationId,
+      id,
+      dto.format || 'csv',
+    );
+  }
+
+  @Post('reports/defaults')
+  async createDefaultReports(
+    @CurrentUser() user: UserPayload,
+  ) {
+    await this.reportsService.createDefaultReports(user.organizationId);
+    return { success: true };
+  }
+
+  // ============================================================
+  // BENCHMARKING
+  // ============================================================
+
+  @Get('benchmarks/compare')
+  async compareBenchmarks(
+    @Query() query: { industry?: string; companySize?: string; metrics?: string[] },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.benchmarkingService.compareToBenchmarks(
+      user.organizationId,
+      {
+        industry: query.industry,
+        companySize: query.companySize,
+        metrics: query.metrics,
+      },
+    );
+  }
+
+  @Get('benchmarks/summary')
+  async getBenchmarkSummary(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.benchmarkingService.getBenchmarkSummary(user.organizationId);
+  }
+
+  @Get('benchmarks/competitors')
+  async getCompetitorBenchmarks(
+    @Query('industry') industry: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.benchmarkingService.getCompetitorBenchmarks(industry || 'saas');
+  }
+
+  @Get('benchmarks/trends')
+  async getBenchmarkTrends(
+    @Query() query: { metric: string; industry?: string },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.benchmarkingService.getBenchmarkTrends(
+      query.metric,
+      query.industry || 'saas',
+    );
+  }
+
+  @Post('benchmarks/seed')
+  async seedBenchmarkData(
+    @CurrentUser() user: UserPayload,
+  ) {
+    await this.benchmarkingService.seedBenchmarkData();
+    return { success: true };
+  }
+
+  // ============================================================
+  // FORECASTING
+  // ============================================================
+
+  @Post('forecasts/generate')
+  async generateForecast(
+    @Body() dto: { months?: number },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.forecastingService.generateRevenueForecast(
+      user.organizationId,
+      dto.months || 3,
+    );
+  }
+
+  @Get('forecasts')
+  async getForecasts(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.forecastingService.getForecasts(user.organizationId);
+  }
+
+  @Post('forecasts/scenario')
+  async generateScenario(
+    @Body() dto: {
+      name: string;
+      leadGrowthRate: number;
+      conversionRateChange: number;
+      avgDealSizeChange: number;
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.forecastingService.generateScenarioForecast(
+      user.organizationId,
+      dto,
+    );
+  }
+
+  @Get('forecasts/accuracy')
+  async getForecastAccuracy(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.forecastingService.getForecastAccuracy(user.organizationId);
+  }
+
+  // ============================================================
+  // SAVED FILTERS
+  // ============================================================
+
+  @Post('filters')
+  async createFilter(
+    @Body() dto: any,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.savedFiltersService.createFilter(
+      user.organizationId,
+      user.userId,
+      dto,
+    );
+  }
+
+  @Get('filters')
+  async getFilters(
+    @Query() query: { filterType?: string; includeShared?: string },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.savedFiltersService.getFilters(
+      user.organizationId,
+      user.userId,
+      {
+        filterType: query.filterType,
+        includeShared: query.includeShared !== 'false',
+      },
+    );
+  }
+
+  @Get('filters/role-based')
+  async getRoleBasedFilters(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.savedFiltersService.getRoleBasedFilters(
+      user.organizationId,
+      user.userId,
+      user.role || 'sales',
+    );
+  }
+
+  @Post('filters/defaults')
+  async createDefaultFilters(
+    @CurrentUser() user: UserPayload,
+  ) {
+    await this.savedFiltersService.createDefaultFiltersForUser(
+      user.organizationId,
+      user.userId,
+      user.role || 'sales',
+    );
+    return { success: true };
+  }
+
+  @Get('filters/suggestions')
+  async getFilterSuggestions(
+    @Query('type') filterType: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.savedFiltersService.getFilterSuggestions(
+      user.organizationId,
+      filterType || 'leads',
     );
   }
 }
