@@ -3313,3 +3313,453 @@ model AIInsightRule {
   @@index([isActive])
   @@map("ai_insight_rules")
 }
+// ============================================================================
+// LAYER 12: ENTERPRISE-GRADE SECURITY, COMPLIANCE & DATA VERIFICATION
+// ============================================================================
+
+model ContactVerification {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Contact
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Email Verification
+  emailVerified   Boolean  @default(false)
+  emailVerifiedAt DateTime?
+  emailStatus     String   @default("unknown") // valid, invalid, catch_all, unknown
+  emailScore      Int      @default(0) // 0-100 deliverability score
+  emailProvider   String?  // gmail, outlook, corporate
+  emailDisposable Boolean  @default(false)
+  emailRoleBased  Boolean  @default(false) // admin@, support@, etc
+  emailRiskLevel  String   @default("medium") // low, medium, high
+  
+  // Phone Verification
+  phoneVerified   Boolean  @default(false)
+  phoneVerifiedAt DateTime?
+  phoneStatus     String   @default("unknown") // valid, invalid, landline, mobile, voip
+  phoneCarrier    String?
+  phoneCountry    String?
+  phoneFormatted  String?
+  phoneRiskLevel  String   @default("medium")
+  
+  // Overall Quality Score
+  overallScore    Int      @default(0) // 0-100 composite score
+  dataQuality     String   @default("fair") // poor, fair, good, excellent
+  
+  // Verification Source
+  verifiedBy      String   @default("system") // system, neverbounce, zerobounce, twilio
+  verificationCost Float?  // Cost in cents
+  
+  // Last Check
+  lastCheckedAt   DateTime @default(now())
+  nextCheckAt     DateTime?
+  
+  // Bounce History
+  bounceCount     Int      @default(0)
+  lastBounceAt    DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([contactId])
+  @@index([organizationId])
+  @@index([emailStatus])
+  @@index([phoneStatus])
+  @@index([overallScore])
+  @@map("contact_verification")
+}
+
+model ConsentRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Contact
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Consent Details
+  consentType     String   // email, phone, sms, marketing, data_processing
+  granted         Boolean  @default(true)
+  grantedAt       DateTime @default(now())
+  grantedVia      String   // form, website, import, manual, api
+  
+  // Source
+  source          String?  // Landing page, form ID, campaign
+  sourceUrl       String?  // URL where consent was given
+  ipAddress       String?
+  userAgent       String?
+  
+  // Legal Basis (GDPR)
+  legalBasis      String?  // consent, legitimate_interest, contract, legal_obligation
+  
+  // Withdrawal
+  withdrawnAt     DateTime?
+  withdrawnVia    String?
+  withdrawalReason String?
+  
+  // Documentation
+  consentText     String?  @db.Text // What they agreed to
+  privacyPolicyVersion String? // Version of privacy policy
+  termsVersion    String?  // Version of terms
+  
+  // Double Opt-In
+  doubleOptInSent    Boolean @default(false)
+  doubleOptInSentAt  DateTime?
+  doubleOptInConfirmed Boolean @default(false)
+  doubleOptInConfirmedAt DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([consentType])
+  @@index([granted])
+  @@map("consent_records")
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Action Details
+  action          String   // create, update, delete, view, export, login, logout
+  entityType      String   // contact, company, deal, user, settings
+  entityId        String?
+  
+  // Who
+  userId          String?
+  userEmail       String?
+  userRole        String?
+  
+  // What Changed
+  previousValues  Json?    // Before state
+  newValues       Json?    // After state
+  changes         Json?    // Diff of changes
+  
+  // Context
+  ipAddress       String?
+  userAgent       String?
+  sessionId       String?
+  
+  // API Details
+  apiEndpoint     String?
+  httpMethod      String?
+  requestId       String?
+  
+  // Status
+  status          String   @default("success") // success, failure, denied
+  errorMessage    String?
+  
+  // Classification
+  severity        String   @default("info") // info, warning, error, critical
+  category        String   @default("general") // security, data, user, system
+  
+  timestamp       DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([severity])
+  @@map("audit_logs")
+}
+
+model DataRetentionPolicy {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Policy Settings
+  policyName      String
+  description     String?
+  
+  // Retention Rules
+  contactRetentionDays    Int      @default(2555) // 7 years default
+  activityRetentionDays   Int      @default(1095) // 3 years
+  emailRetentionDays      Int      @default(1095)
+  callRetentionDays       Int      @default(365)
+  deletedDataRetentionDays Int     @default(30) // Soft delete period
+  
+  // Auto-Deletion
+  autoDeleteEnabled       Boolean  @default(false)
+  autoDeleteInactiveAfterDays Int?  // Delete inactive contacts after X days
+  
+  // Legal Holds
+  legalHoldEnabled        Boolean  @default(false)
+  legalHoldReason         String?
+  legalHoldUntil          DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, policyName])
+  @@map("data_retention_policies")
+}
+
+model DataDeletionRequest {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Requestor
+  requestedById   String   // User who requested
+  requestedByEmail String
+  
+  // Subject
+  subjectType     String   // contact, company, user, all_data
+  subjectId       String?  // If specific contact/company
+  subjectEmail    String?  // For right to be forgotten requests
+  
+  // Request Details
+  requestType     String   // gdpr_deletion, ccpa_deletion, data_cleanup, right_to_be_forgotten
+  reason          String?
+  
+  // Scope
+  scope           Json     // { contacts: true, activities: true, communications: false }
+  
+  // Status
+  status          String   @default("pending") // pending, processing, completed, failed, cancelled
+  
+  // Processing
+  processedById   String?
+  processedAt     DateTime?
+  
+  // Records Affected
+  recordsDeleted  Int      @default(0)
+  deletionLog     Json?    // Details of what was deleted
+  
+  // Verification
+  verificationCode String? // For GDPR requests
+  verifiedAt      DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([subjectId])
+  @@map("data_deletion_requests")
+}
+
+model ComplianceReport {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Report Details
+  reportType      String   // gdpr, ccpa, soc2, tcpa, general
+  reportName      String
+  description     String?
+  
+  // Data
+  reportData      Json     // The actual report data
+  
+  // Coverage
+  startDate       DateTime
+  endDate         DateTime
+  
+  // Export
+  exportUrl       String?
+  exportFormat    String   @default("pdf") // pdf, csv, xlsx
+  
+  // Generation
+  generatedById   String
+  generatedAt     DateTime @default(now())
+  
+  // Scheduling
+  isScheduled     Boolean  @default(false)
+  scheduleConfig  Json?    // { frequency: "monthly", recipients: [] }
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([reportType])
+  @@index([generatedAt])
+  @@map("compliance_reports")
+}
+
+model RolePermission {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  roleName        String   // admin, manager, sales_rep, marketing, viewer
+  description     String?
+  
+  // Permissions (CRUD + special)
+  permissions     Json     // { contacts: { read: true, write: true, delete: false }, ... }
+  
+  // Data Access
+  allowedFields   Json?    // Field-level access control
+  restrictedFields String[] @default([]) // Fields they cannot see
+  
+  // Scope
+  dataScope       String   @default("all") // all, team, own
+  
+  // Features
+  allowedFeatures String[] @default([]) // Features they can access
+  deniedFeatures  String[] @default([]) // Features they cannot access
+  
+  // Compliance
+  canExportData   Boolean  @default(true)
+  canDeleteData   Boolean  @default(false)
+  canModifySettings Boolean @default(false)
+  
+  isDefault       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, roleName])
+  @@index([organizationId])
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  userId          String
+  roleId          String
+  role            RolePermission @relation(fields: [roleId], references: [id])
+  
+  // Custom Overrides
+  customPermissions Json?  // Override default role permissions
+  
+  assignedById    String
+  assignedAt      DateTime @default(now())
+  
+  expiresAt       DateTime? // For temporary access
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("user_role_assignments")
+}
+
+model DuplicateRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Record being checked
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id])
+  
+  // Duplicate matches
+  duplicateContactId String
+  duplicateContact   Contact @relation("DuplicateContact", fields: [duplicateContactId], references: [id])
+  
+  // Match Details
+  matchScore      Float    // 0-100 similarity score
+  matchReasons    String[] // email_match, phone_match, name_similar
+  
+  // Resolution
+  status          String   @default("pending") // pending, merged, dismissed, false_positive
+  resolvedById    String?
+  resolvedAt      DateTime?
+  resolutionAction String? // merge_keep_first, merge_keep_second, keep_both
+  
+  // Auto-merge data
+  suggestedMerge  Json?    // Suggested field mappings
+  
+  detectedAt      DateTime @default(now())
+
+  @@unique([contactId, duplicateContactId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([matchScore])
+  @@map("duplicate_records")
+}
+
+model PrivacySettings {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // GDPR Settings
+  gdprEnabled             Boolean  @default(true)
+  dpoEmail                String?  // Data Protection Officer
+  dpoName                 String?
+  privacyPolicyUrl        String?
+  cookieConsentEnabled    Boolean  @default(true)
+  
+  // CCPA Settings
+  ccpaEnabled             Boolean  @default(false)
+  doNotSellEnabled        Boolean  @default(true)
+  
+  // TCPA/Consent Settings
+  tcpaComplianceEnabled   Boolean  @default(true)
+  expressConsentRequired  Boolean  @default(true)
+  doubleOptInRequired     Boolean  @default(false)
+  
+  // Data Processing
+  dataProcessingLocation  String   @default("US") // US, EU, etc
+  thirdPartySharing      Boolean   @default(false)
+  analyticsSharing       Boolean   @default(true)
+  
+  // Security
+  mfaRequired            Boolean   @default(false)
+  passwordPolicy         String    @default("strong") // basic, strong, enterprise
+  sessionTimeoutMinutes  Int       @default(480) // 8 hours
+  
+  // Audit
+  auditLogRetentionDays  Int       @default(365)
+  userActivityTracking   Boolean   @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId])
+  @@map("privacy_settings")
+}
+
+model SecurityEvent {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Event Details
+  eventType       String   // login_failed, suspicious_activity, data_export, permission_denied, mfa_triggered
+  severity        String   @default("low") // low, medium, high, critical
+  
+  // Actor
+  userId          String?
+  userEmail       String?
+  
+  // Details
+  description     String   @db.Text
+  metadata        Json?    // Additional context
+  
+  // Location
+  ipAddress       String?
+  country         String?
+  city            String?
+  
+  // Device
+  deviceId        String?
+  deviceType      String?
+  browser         String?
+  
+  // Resolution
+  status          String   @default("open") // open, investigating, resolved, false_positive
+  resolvedById    String?
+  resolvedAt      DateTime?
+  resolution      String?
+  
+  // Notifications
+  notifiedUsers   String[] @default([])
+  
+  createdAt       DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+  @@map("security_events")
+}
