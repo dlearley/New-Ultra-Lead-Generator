@@ -11,6 +11,7 @@ import { IntentModule } from './intent/intent.module';
 import { BulkImportModule } from './bulk-import/bulk-import.module';
 import { CaptureModule } from './capture/capture.module';
 import { ScoringModule } from './scoring/scoring.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -27,6 +28,7 @@ import { PrismaService } from './services/prisma.service';
     BulkImportModule,
     CaptureModule,
     ScoringModule,
+    IntegrationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

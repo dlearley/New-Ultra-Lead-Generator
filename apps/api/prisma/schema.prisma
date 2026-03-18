@@ -1724,3 +1724,410 @@ model PredictiveModel {
   @@index([status])
   @@map("predictive_models")
 }
+// ============================================================================
+// LAYER 8: SEAMLESS CRM & TOOL INTEGRATIONS
+// ============================================================================
+
+model CrmConnection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // CRM Provider
+  provider        String   // salesforce, hubspot, dynamics, pipedrive, zoho, freshsales
+  providerName    String   // Display name
+  
+  // Connection Status
+  status          String   @default("disconnected") // connected, disconnected, error, syncing
+  connectedAt     DateTime?
+  lastSyncAt      DateTime?
+  lastError       String?
+  lastErrorAt     DateTime?
+  
+  // Authentication
+  authType        String   // oauth2, api_key, username_password
+  credentials     Json?    // Encrypted credentials
+  accessToken     String?  // Encrypted
+  refreshToken    String?  // Encrypted
+  tokenExpiresAt  DateTime?
+  
+  // Connection Settings
+  settings        Json     @default("{}")
+  // {
+  //   instanceUrl: "https://company.salesforce.com",
+  //   apiVersion: "v58.0",
+  //   sandbox: false,
+  //   syncFrequency: "realtime", // realtime, hourly, daily
+  //   conflictResolution: "crm_wins", // crm_wins, local_wins, newer_wins
+  // }
+  
+  // Sync Configuration
+  syncConfig      Json     @default("{}")
+  // {
+  //   contacts: { enabled: true, direction: "bidirectional" },
+  //   companies: { enabled: true, direction: "bidirectional" },
+  //   deals: { enabled: true, direction: "to_crm" },
+  //   tasks: { enabled: true, direction: "bidirectional" },
+  //   notes: { enabled: false, direction: "to_crm" }
+  // }
+  
+  // Stats
+  totalSynced     Int      @default(0)
+  syncSuccessRate Float    @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  fieldMappings   CrmFieldMapping[]
+  syncJobs        CrmSyncJob[]
+  pipelineStages  CrmPipelineStage[]
+  deals           CrmDeal[]
+  tasks           CrmTask[]
+
+  @@unique([organizationId, provider])
+  @@index([organizationId])
+  @@index([status])
+  @@map("crm_connections")
+}
+
+model CrmFieldMapping {
+  id              String   @id @default(cuid())
+  
+  connectionId    String
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  // Entity Type
+  entityType      String   // contact, company, deal, task
+  
+  // Field Mapping
+  localField      String   // Our field name (e.g., "firstName")
+  crmField        String   // CRM field name (e.g., "FirstName", "firstname")
+  crmFieldId      String?  // CRM field API ID
+  
+  // Transformation
+  transform       String?  // uppercase, lowercase, date_format, phone_format
+  
+  // Sync Direction
+  direction       String   @default("bidirectional") // to_crm, from_crm, bidirectional
+  
+  // Required
+  isRequired      Boolean  @default(false)
+  
+  // Active
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([connectionId, entityType, localField])
+  @@index([connectionId])
+  @@index([entityType])
+  @@map("crm_field_mappings")
+}
+
+model CrmSyncJob {
+  id              String   @id @default(cuid())
+  
+  connectionId    String
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  organizationId  String
+  
+  // Job Type
+  jobType         String   // full_sync, incremental_sync, initial_import, push_to_crm
+  entityType      String   // contact, company, deal, all
+  
+  // Status
+  status          String   @default("pending") // pending, running, completed, failed, cancelled
+  
+  // Progress
+  totalRecords    Int      @default(0)
+  processedRecords Int     @default(0)
+  successCount    Int      @default(0)
+  errorCount      Int      @default(0)
+  
+  // Timing
+  startedAt       DateTime?
+  completedAt     DateTime?
+  
+  // Results
+  errors          Json?    // Array of error details
+  
+  // Triggered By
+  triggeredById   String?  // User ID
+  isScheduled     Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([connectionId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("crm_sync_jobs")
+}
+
+model CrmPipelineStage {
+  id              String   @id @default(cuid())
+  
+  connectionId    String
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  organizationId  String
+  
+  // Stage Info
+  name            String
+  crmStageId      String   // CRM's stage ID
+  displayOrder    Int
+  
+  // Probability
+  winProbability  Int      @default(0) // 0-100
+  
+  // Category
+  category        String   @default("open") // open, won, lost
+  
+  // Mapping
+  localStageId    String?  // Our internal stage mapping
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([connectionId])
+  @@index([crmStageId])
+  @@map("crm_pipeline_stages")
+}
+
+model CrmDeal {
+  id              String   @id @default(cuid())
+  
+  connectionId    String
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  organizationId  String
+  
+  // Deal Info
+  crmDealId       String   // CRM's deal ID
+  name            String
+  value           Float?
+  currency        String   @default("USD")
+  
+  // Stage
+  stageId         String?
+  pipelineStage   CrmPipelineStage? @relation(fields: [stageId], references: [id])
+  
+  // Related Records
+  contactId       String?
+  contact         Contact? @relation(fields: [contactId], references: [id])
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  
+  // Dates
+  closeDate       DateTime?
+  expectedCloseDate DateTime?
+  
+  // Sync Status
+  lastSyncedAt    DateTime @default(now())
+  syncStatus      String   @default("synced") // synced, pending, conflict
+  
+  // Raw Data
+  crmData         Json?    // Full CRM deal object
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([connectionId, crmDealId])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([stageId])
+  @@map("crm_deals")
+}
+
+model CrmTask {
+  id              String   @id @default(cuid())
+  
+  connectionId    String
+  connection      CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  organizationId  String
+  
+  // Task Info
+  crmTaskId       String   // CRM's task ID
+  subject         String
+  description     String?
+  
+  // Type
+  taskType        String   @default("call") // call, email, meeting, todo, demo
+  
+  // Status
+  status          String   @default("open") // open, completed, cancelled
+  priority        String   @default("medium") // low, medium, high
+  
+  // Assignment
+  assignedToId    String?  // User ID
+  crmAssignedToId String?  // CRM user ID
+  
+  // Related Records
+  contactId       String?
+  contact         Contact? @relation(fields: [contactId], references: [id])
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  dealId          String?
+  
+  // Due Date
+  dueDate         DateTime?
+  completedAt     DateTime?
+  
+  // Reminder
+  reminderSet     Boolean  @default(false)
+  reminderTime    DateTime?
+  
+  // Sync Status
+  lastSyncedAt    DateTime @default(now())
+  syncStatus      String   @default("synced")
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([connectionId, crmTaskId])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@map("crm_tasks")
+}
+
+model WebhookSubscription {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Webhook Info
+  name            String
+  description     String?
+  
+  // Target
+  url             String
+  secret          String?  // For signature verification
+  
+  // Events
+  events          String[] // contact.created, contact.updated, deal.won, etc.
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  // Retry Settings
+  maxRetries      Int      @default(3)
+  retryDelay      Int      @default(60) // seconds
+  
+  // Stats
+  totalDelivered  Int      @default(0)
+  totalFailed     Int      @default(0)
+  lastDeliveredAt DateTime?
+  lastFailedAt    DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  deliveries      WebhookDelivery[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("webhook_subscriptions")
+}
+
+model WebhookDelivery {
+  id              String   @id @default(cuid())
+  
+  subscriptionId  String
+  subscription    WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  // Event Info
+  eventType       String
+  payload         Json     // The event data
+  
+  // Delivery Status
+  status          String   // delivered, failed, retrying
+  httpStatusCode  Int?
+  responseBody    String?  @db.Text
+  
+  // Attempts
+  attemptCount    Int      @default(1)
+  maxAttempts     Int      @default(3)
+  
+  // Timing
+  deliveredAt     DateTime?
+  nextRetryAt     DateTime?
+  
+  // Error
+  errorMessage    String?
+  
+  createdAt       DateTime @default(now())
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
+}
+
+model ZapierIntegration {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Zap Info
+  zapId           String   // Zapier's zap ID
+  zapName         String
+  
+  // Trigger/Action
+  triggerType     String   // new_lead, updated_contact, deal_won
+  actionType      String   // create_task, send_email, add_to_list
+  
+  // Status
+  status          String   @default("active") // active, paused, error
+  
+  // Mapping
+  fieldMapping    Json     // Field mappings for the zap
+  
+  // Stats
+  totalTriggered  Int      @default(0)
+  lastTriggeredAt DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("zapier_integrations")
+}
+
+model IntegrationActivity {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Activity Info
+  integrationType String   // crm, zapier, webhook, api
+  action          String   // sync_started, sync_completed, connection_error, webhook_triggered
+  
+  // Details
+  entityType      String?  // contact, company, deal
+  entityId        String?
+  details         Json?    // Additional context
+  
+  // Status
+  status          String   @default("success") // success, warning, error
+  message         String?
+  
+  // User
+  performedById   String?
+  
+  createdAt       DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([integrationType])
+  @@index([createdAt])
+  @@map("integration_activities")
+}
