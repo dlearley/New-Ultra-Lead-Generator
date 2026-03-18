@@ -1,3 +1,7 @@
+// Comprehensive B2B/B2C Database Schema for Ultra Lead Generator
+// Generated: March 18, 2026
+// Purpose: Full-featured contact database with enrichment, intent, and technographics
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,94 +11,1047 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================================
+// CORE ENTITY MODELS
+// ============================================================================
+
 model Organization {
   id          String   @id @default(cuid())
   name        String
+  slug        String   @unique
+  description String?
+  website     String?
+  
+  // Settings
+  settings    Json?    @default("{}")
+  
+  // Billing
+  plan        String   @default("free") // free, starter, professional, enterprise
+  planExpiresAt DateTime?
+  
+  // Usage tracking
+  apiCallsThisMonth Int @default(0)
+  contactsLimit     Int @default(1000)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // CRM configurations
-  crmConfigurations CrmConfiguration[]
-  
-  // Business leads
-  businessLeads BusinessLead[]
-  
-  // Field mappings
-  fieldMappings FieldMapping[]
-  
-  // Sync jobs
-  syncJobs SyncJob[]
-
-  // Users
-  users User[]
+  // Relations
+  users                 User[]
+  contacts              Contact[]
+  companies             Company[]
+  lists                 ContactList[]
+  crmConfigurations     CrmConfiguration[]
+  enrichmentCredits     EnrichmentCredit[]
+  searchHistory         SearchHistory[]
+  alerts                IntentAlert[]
 
   @@map("organizations")
 }
 
 model User {
-  id             String        @id @default(cuid())
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  id              String    @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  email          String        @unique
-  passwordHash   String        // bcrypt hashed password
-  firstName      String?
-  lastName       String?
-  role           UserRole      @default(USER)
-  isActive       Boolean       @default(true)
+  // Profile
+  email           String
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  avatarUrl       String?
   
-  // MFA
-  mfaSecret      String?       // TOTP secret
-  mfaEnabled     Boolean       @default(false)
+  // Status
+  isActive        Boolean   @default(true)
+  isAdmin         Boolean   @default(false)
+  emailVerified   Boolean   @default(false)
   
-  // Refresh tokens
-  refreshTokens  RefreshToken[]
+  // Preferences
+  preferences     Json?     @default("{}")
   
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  // Timestamps
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
+  // Relations
+  refreshTokens   RefreshToken[]
+  savedSearches   SavedSearch[]
+  activities      UserActivity[]
+
+  @@unique([organizationId, email])
   @@map("users")
 }
 
-model RefreshToken {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+// ============================================================================
+// CONTACT & COMPANY MODELS (Core B2B Data)
+// ============================================================================
 
+model Contact {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Core Identity
+  firstName       String
+  lastName        String
+  fullName        String?
+  email           String
+  emailStatus     EmailStatus @default(unverified)
+  phone           String?
+  phoneStatus     PhoneStatus @default(unverified)
+  mobile          String?
+  
+  // Professional
+  title           String?
+  seniority       SeniorityLevel?
+  department      Department?
+  
+  // Social Profiles
+  linkedInUrl     String?
+  linkedInId      String?
+  twitterHandle   String?
+  githubUsername  String?
+  
+  // Employment
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  
+  // Location
+  locationId      String?
+  location        Location? @relation(fields: [locationId], references: [id])
+  
+  // Enrichment Data
+  enrichedAt      DateTime?
+  enrichmentSource String?
+  enrichmentAttempts Int @default(0)
+  
+  // Quality Scores
+  dataQualityScore Float   @default(0) // 0-100
+  completenessScore Float  @default(0)
+  
+  // Intent Signals
+  intentScore     Float    @default(0) // 0-100 buying intent
+  buyingStage     BuyingStage @default(unknown)
+  lastActivityAt  DateTime?
+  
+  // Tags
+  tags            ContactTag[]
+  
+  // Metadata
+  source          String?  // manual, import, enrichment, api
+  customFields    Json?    @default("{}")
+  notes           String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  activities      ContactActivity[]
+  intents         IntentSignal[]
+  listMemberships ContactListMembership[]
+  enrichments     EnrichmentLog[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([email])
+  @@index([intentScore])
+  @@index([buyingStage])
+  @@index([createdAt])
+  @@map("contacts")
+}
+
+model Company {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  name                String
+  legalName           String?
+  description         String?
+  website             String?
+  domain              String?  @unique
+  
+  // Firmographics
+  industry            String?
+  subIndustry         String?
+  naicsCode           String?
+  sicCode             String?
+  
+  // Company Size
+  employeeCount       Int?
+  employeeRange       EmployeeRange?
+  annualRevenue       Float?
+  revenueRange        RevenueRange?
+  
+  // Technographics
+  technologies        CompanyTechnology[]
+  
+  // Location
+  headquartersId      String?
+  headquarters        Location? @relation("CompanyHeadquarters", fields: [headquartersId], references: [id])
+  locations           Location[] @relation("CompanyLocations")
+  
+  // Financial
+  fundingStage        FundingStage?
+  fundingAmount       Float?
+  lastFundingDate     DateTime?
+  lastFundingRound    String?
+  valuation           Float?
+  
+  // Social
+  linkedInUrl         String?
+  twitterHandle       String?
+  facebookUrl         String?
+  
+  // Intent
+  intentScore         Float    @default(0)
+  buyingStage         BuyingStage @default(unknown)
+  
+  // Enrichment
+  enrichedAt          DateTime?
+  enrichmentSource    String?
+  
+  // Metadata
+  source              String?
+  customFields        Json?    @default("{}")
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  contacts            Contact[]
+  news                CompanyNews[]
+
+  @@index([organizationId])
+  @@index([industry])
+  @@index([employeeCount])
+  @@index([fundingStage])
+  @@index([intentScore])
+  @@map("companies")
+}
+
+model Location {
+  id          String    @id @default(cuid())
+  
+  // Address
+  address     String?
+  city        String
+  state       String?
+  country     String
+  postalCode  String?
+  region      String?   // For grouping (e.g., "EMEA", "APAC")
+  
+  // Geo
+  latitude    Float?
+  longitude   Float?
+  timezone    String?
+  
+  // Metadata
+  isHeadquarters Boolean @default(false)
+  
+  // Relations
+  headquartersFor Company[] @relation("CompanyHeadquarters")
+  companies       Company[] @relation("CompanyLocations")
+  contacts        Contact[]
+  
+  @@index([city])
+  @@index([state])
+  @@index([country])
+  @@index([latitude, longitude])
+  @@map("locations")
+}
+
+// ============================================================================
+// TECHNOGRAPHICS (Technology Stack Tracking)
+// ============================================================================
+
+model Technology {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  slug            String   @unique
+  category        TechCategory
+  subCategory     String?
+  description     String?
+  website         String?
+  
+  // Detection
+  detectionPatterns Json?  // Regex patterns for detection
+  
+  // Metadata
+  isPopular       Boolean  @default(false)
+  logoUrl         String?
+  
+  // Relations
+  companies       CompanyTechnology[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPopular])
+  @@map("technologies")
+}
+
+model CompanyTechnology {
+  id              String      @id @default(cuid())
+  companyId       String
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  technologyId    String
+  technology      Technology  @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  
+  // Detection Info
+  detectedAt      DateTime    @default(now())
+  confidence      Float       @default(0.8)  // 0-1 detection confidence
+  detectionMethod String      // dns, html, script, api, manual
+  
+  // Current Status
+  isActive        Boolean     @default(true)
+  firstDetectedAt DateTime    @default(now())
+  lastSeenAt      DateTime    @default(now())
+  removedAt       DateTime?
+  
+  @@unique([companyId, technologyId])
+  @@index([companyId])
+  @@index([technologyId])
+  @@index([detectedAt])
+  @@map("company_technologies")
+}
+
+// ============================================================================
+// INTENT SIGNALS (Buying Intent Tracking)
+// ============================================================================
+
+model IntentSignal {
+  id              String      @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  contactId       String?
+  contact         Contact?    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  companyId       String?
+  company         Company?    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Signal Type
+  type            IntentType
+  category        IntentCategory
+  source          String      // website, partner, data_provider, api
+  
+  // Signal Data
+  score           Float       // 0-100 intent score
+  confidence      Float       // 0-1 detection confidence
+  
+  // Context
+  url             String?
+  referrer        String?
+  campaign        String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  
+  // Content
+  pageTitle       String?
+  contentTopic    String?
+  
+  // Device/Geo
+  ipAddress       String?
+  userAgent       String?
+  
+  // Timestamps
+  detectedAt      DateTime    @default(now())
+  expiresAt       DateTime?   // Intent decays over time
+  processedAt     DateTime?
+  
+  // Raw Data
+  metadata        Json?       @default("{}")
+  
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([type])
+  @@index([detectedAt])
+  @@index([score])
+  @@map("intent_signals")
+}
+
+model IntentAlert {
+  id              String      @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Alert Configuration
+  name            String
+  description     String?
+  
+  // Filter Criteria
+  filters         Json        // Stored search filters
+  
+  // Threshold
+  minIntentScore  Float       @default(50)
+  
+  // Notification
+  notifyEmail     Boolean     @default(true)
+  notifySlack     Boolean     @default(false)
+  webhookUrl      String?
+  
+  // Status
+  isActive        Boolean     @default(true)
+  lastTriggeredAt DateTime?
+  triggerCount    Int         @default(0)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("intent_alerts")
+}
+
+// ============================================================================
+// NEWS & EVENTS (Company Intelligence)
+// ============================================================================
+
+model CompanyNews {
+  id              String      @id @default(cuid())
+  companyId       String
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Content
+  title           String
+  summary         String?
+  url             String?
+  source          String?
+  sourceUrl       String?
+  
+  // Categorization
+  category        NewsCategory
+  subCategory     String?
+  sentiment       Sentiment     @default(neutral)
+  
+  // Impact
+  impactScore     Float?        // 0-100 estimated business impact
+  
+  // Financial (if applicable)
+  fundingAmount   Float?
+  valuation       Float?
+  investors       String[]
+  
+  // Timestamps
+  publishedAt     DateTime
+  detectedAt      DateTime      @default(now())
+  
+  // Processing
+  processedAt     DateTime?
+  isNotified      Boolean       @default(false)
+  
+  @@index([companyId])
+  @@index([category])
+  @@index([publishedAt])
+  @@index([detectedAt])
+  @@map("company_news")
+}
+
+// ============================================================================
+// ACTIVITY TRACKING
+// ============================================================================
+
+model ContactActivity {
+  id              String      @id @default(cuid())
+  contactId       String
+  contact         Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  type            ActivityType
+  subType         String?     // More specific categorization
+  
+  // Context
+  description     String?
+  metadata        Json?       @default("{}")
+  
+  // Source
+  source          String      // email, website, crm, manual
+  sourceId        String?     // Reference to source record
+  
+  // User Attribution
+  performedById   String?
+  performedBy     User?       @relation(fields: [performedById], references: [id])
+  
+  // Timestamps
+  occurredAt      DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+
+  @@index([contactId])
+  @@index([type])
+  @@index([occurredAt])
+  @@map("contact_activities")
+}
+
+model UserActivity {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type            String      // search, export, import, view, edit
+  description     String?
+  metadata        Json?       @default("{}")
+  
+  // Entity Reference
+  entityType      String?     // contact, company, list
+  entityId        String?
+  
+  occurredAt      DateTime    @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([occurredAt])
+  @@map("user_activities")
+}
+
+// ============================================================================
+// CONTACT LISTS (Segmentation)
+// ============================================================================
+
+model ContactList {
+  id              String      @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  
+  // List Type
+  type            ListType      @default(static)
+  
+  // For dynamic lists
+  filters         Json?         // Stored search filters
+  
+  // Stats
+  contactCount    Int           @default(0)
+  lastRefreshedAt DateTime?
+  
+  // Sharing
+  isShared        Boolean       @default(false)
+  createdById     String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  memberships     ContactListMembership[]
+
+  @@index([organizationId])
+  @@index([type])
+  @@map("contact_lists")
+}
+
+model ContactListMembership {
+  id              String      @id @default(cuid())
+  listId          String
+  list            ContactList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  
+  contactId       String
+  contact         Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // For dynamic lists - track why contact was added
+  matchedFilterAt DateTime?
+  
+  addedAt         DateTime    @default(now())
+
+  @@unique([listId, contactId])
+  @@index([listId])
+  @@index([contactId])
+  @@map("contact_list_memberships")
+}
+
+model ContactTag {
+  id          String   @id @default(cuid())
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  tag         String
+  color       String?  // Hex color for UI
+  
+  addedAt     DateTime @default(now())
+
+  @@unique([contactId, tag])
+  @@index([contactId])
+  @@map("contact_tags")
+}
+
+// ============================================================================
+// SEARCH & DISCOVERY
+// ============================================================================
+
+model SavedSearch {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  
+  // Search Parameters
+  query           String?     // Natural language query
+  filters         Json        // Structured filters
+  
+  // Stats
+  resultCount     Int?
+  lastRunAt       DateTime?
+  
+  // Notifications
+  alertEnabled    Boolean     @default(false)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId])
+  @@map("saved_searches")
+}
+
+model SearchHistory {
+  id              String      @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Search Parameters
+  query           String?
+  filters         Json?
+  
+  // Results
+  resultCount     Int
+  
+  // Execution
+  executionTimeMs Int         // Performance tracking
+  
+  searchedAt      DateTime    @default(now())
+
+  @@index([organizationId])
+  @@index([searchedAt])
+  @@map("search_history")
+}
+
+// ============================================================================
+// ENRICHMENT TRACKING
+// ============================================================================
+
+model EnrichmentLog {
+  id              String      @id @default(cuid())
+  contactId       String
+  contact         Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Enrichment Details
+  source          String      // clearbit, zoominfo, hunter, etc.
+  status          EnrichmentStatus
+  
+  // Fields Enriched
+  fieldsEnriched  String[]    // List of fields that were updated
+  
+  // Data Quality
+  confidence      Float?      // Overall confidence 0-1
+  
+  // Cost
+  creditsUsed     Int         @default(1)
+  
+  // Raw Response (for debugging)
+  rawResponse     Json?
+  
+  // Error Handling
+  errorMessage    String?
+  
+  enrichedAt      DateTime    @default(now())
+
+  @@index([contactId])
+  @@index([source])
+  @@index([status])
+  @@map("enrichment_logs")
+}
+
+model EnrichmentCredit {
+  id              String      @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Credit Details
+  amount          Int
+  type            CreditType
+  
+  // Source
+  source          String      // purchase, bonus, rollover
+  description     String?
+  
+  // Usage
+  used            Int         @default(0)
+  remaining       Int
+  
+  // Expiration
+  expiresAt       DateTime?
+  
+  createdAt       DateTime    @default(now())
+
+  @@index([organizationId])
+  @@index([expiresAt])
+  @@map("enrichment_credits")
+}
+
+// ============================================================================
+// AUTHENTICATION (Enhanced)
+// ============================================================================
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token       String   @unique
+  
+  // Device Info
+  deviceInfo  String?
+  ipAddress   String?
+  
+  // Status
+  isRevoked   Boolean  @default(false)
+  
+  // Timestamps
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  USER
-}
+// ============================================================================
+// CRM INTEGRATION (Existing - Enhanced)
+// ============================================================================
 
 model CrmConfiguration {
-  id             String              @id @default(cuid())
-  organizationId String
-  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id              String      @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  crmType        CrmType
-  isActive       Boolean             @default(false)
-  credentials    Json // Encrypted credentials for CRM API
+  // CRM Details
+  name            String
+  type            CrmType
   
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  // Credentials (Encrypted)
+  credentials     Json
+  
+  // Settings
+  settings        Json?       @default("{}")
+  
+  // Status
+  isActive        Boolean     @default(true)
+  lastSyncedAt    DateTime?
+  
+  // Field Mappings
+  fieldMappings   FieldMapping[]
+  
+  // Sync Jobs
+  syncJobs        SyncJob[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
+  @@unique([organizationId, name])
+  @@index([organizationId])
   @@map("crm_configurations")
 }
 
+model FieldMapping {
+  id              String          @id @default(cuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  crmConfigId     String?
+  crmConfig       CrmConfiguration? @relation(fields: [crmConfigId], references: [id])
+  
+  // Field Details
+  sourceField     String          // Our field name
+  targetField     String          // CRM field name
+  fieldType       FieldType       @default(string)
+  
+  // Default/Required
+  defaultValue    String?
+  isRequired      Boolean         @default(false)
+  
+  // Transformation
+  transformRule   String?         // Formula or mapping rule
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([crmConfigId])
+  @@map("field_mappings")
+}
+
+model SyncJob {
+  id              String      @id @default(cuid())
+  crmConfigId     String
+  crmConfig       CrmConfiguration @relation(fields: [crmConfigId], references: [id], onDelete: Cascade)
+  
+  // Job Details
+  type            String      // push, pull, bidirectional
+  entityType      String      // contact, company, lead
+  
+  // Progress
+  status          SyncStatus  @default(pending)
+  totalRecords    Int         @default(0)
+  processedRecords Int        @default(0)
+  successCount    Int         @default(0)
+  errorCount      Int         @default(0)
+  
+  // Results
+  results         Json?
+  errorLog        String?
+  
+  // Timestamps
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime    @default(now())
+
+  @@index([crmConfigId])
+  @@index([status])
+  @@map("sync_jobs")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum EmailStatus {
+  unverified
+  verified
+  risky
+  invalid
+  catch_all
+}
+
+enum PhoneStatus {
+  unverified
+  verified
+  mobile
+  landline
+  invalid
+  dnc
+}
+
+enum SeniorityLevel {
+  c_level
+  vp
+  director
+  manager
+  senior
+  junior
+  individual_contributor
+}
+
+enum Department {
+  sales
+  marketing
+  engineering
+  product
+  operations
+  finance
+  hr
+  it
+  legal
+  customer_success
+  executive
+  other
+}
+
+enum EmployeeRange {
+  _1_10
+  _11_50
+  _51_200
+  _201_500
+  _501_1000
+  _1001_5000
+  _5001_10000
+  _10001_plus
+}
+
+enum RevenueRange {
+  _0_1m
+  _1m_10m
+  _10m_50m
+  _50m_100m
+  _100m_500m
+  _500m_1b
+  _1b_plus
+}
+
+enum FundingStage {
+  pre_seed
+  seed
+  series_a
+  series_b
+  series_c
+  series_d_plus
+  ipo
+  acquired
+  bootstrapped
+  unknown
+}
+
+enum TechCategory {
+  crm
+  marketing_automation
+  analytics
+  ecommerce
+  communication
+  productivity
+  infrastructure
+  security
+  dev_tools
+  design
+  finance
+  hr
+  sales
+  customer_support
+  other
+}
+
+enum IntentType {
+  website_visit
+  content_download
+  pricing_view
+  demo_request
+  trial_signup
+  email_open
+  email_click
+  webinar_attendance
+  funding_news
+  technology_change
+  hiring_activity
+  social_engagement
+  competitor_research
+  comparison_view
+}
+
+enum IntentCategory {
+  behavioral
+  engagement
+  firmographic
+  technographic
+  news
+}
+
+enum NewsCategory {
+  funding
+  acquisition
+  ipo
+  product_launch
+  partnership
+  executive_change
+  expansion
+  layoffs
+  awards
+  legal
+  other
+}
+
+enum Sentiment {
+  very_positive
+  positive
+  neutral
+  negative
+  very_negative
+}
+
+enum ActivityType {
+  email_sent
+  email_opened
+  email_clicked
+  call_made
+  meeting_scheduled
+  meeting_completed
+  note_added
+  task_created
+  task_completed
+  deal_created
+  deal_won
+  deal_lost
+  imported
+  exported
+  enriched
+  viewed
+}
+
+enum ListType {
+  static
+  dynamic
+  smart
+}
+
+enum EnrichmentStatus {
+  pending
+  processing
+  completed
+  failed
+  skipped
+}
+
+enum CreditType {
+  contact
+  company
+  email_verification
+  phone_verification
+  intent_signal
+}
+
+enum CrmType {
+  salesforce
+  hubspot
+  pipedrive
+  zoho
+  freshsales
+  close
+  other
+}
+
+enum FieldType {
+  string
+  number
+  boolean
+  date
+  datetime
+  email
+  phone
+  url
+  select
+  multiselect
+  text
+}
+
+enum SyncStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum BuyingStage {
+  unknown
+  awareness
+  consideration
+  decision
+  purchase
+  churned
+}
+
+// Legacy model - keeping for backwards compatibility
 model BusinessLead {
   id             String        @id @default(cuid())
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  // Lead information
   email          String
   firstName      String?
   lastName       String?
@@ -103,67 +1060,15 @@ model BusinessLead {
   jobTitle       String?
   source         String?
   status         LeadStatus    @default(NEW)
-  
-  // Custom fields
   customFields   Json?
   
-  // Metadata
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  // Sync relationships
   syncJobs       SyncJob[]
 
   @@unique([organizationId, email])
   @@map("business_leads")
-}
-
-model FieldMapping {
-  id             String        @id @default(cuid())
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  crmType        CrmType
-  sourceField    String        // BusinessLead field name
-  targetField    String        // CRM field name
-  fieldType      FieldType
-  isRequired     Boolean       @default(false)
-  defaultValue   String?
-  
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@unique([organizationId, crmType, sourceField])
-  @@map("field_mappings")
-}
-
-model SyncJob {
-  id             String              @id @default(cuid())
-  organizationId String
-  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  businessLeadId String
-  businessLead   BusinessLead        @relation(fields: [businessLeadId], references: [id], onDelete: Cascade)
-  
-  crmType        CrmType
-  status         SyncJobStatus       @default(PENDING)
-  errorMessage   String?
-  
-  // Request/response data
-  requestData    Json?
-  responseData   Json?
-  
-  // Timestamps
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  completedAt    DateTime?
-
-  @@map("sync_jobs")
-}
-
-enum CrmType {
-  SALESFORCE
-  HUBSPOT
-  PIPEDRIVE
 }
 
 enum LeadStatus {
@@ -171,24 +1076,5 @@ enum LeadStatus {
   CONTACTED
   QUALIFIED
   CONVERTED
-  CLOSED_LOST
-}
-
-enum FieldType {
-  STRING
-  NUMBER
-  BOOLEAN
-  DATE
-  EMAIL
-  PHONE
-  PICKLIST
-  TEXTAREA
-}
-
-enum SyncJobStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  RETRYING
+  LOST
 }
