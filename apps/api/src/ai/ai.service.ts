@@ -1,33 +1,16 @@
 // apps/api/src/ai/ai.service.ts
 import { Injectable } from '@nestjs/common';
-import {
-  AIRegistry,
-  PromptBuilder,
-  generationTemplate,
-  ContentType,
-} from '@ultra-lead-gen/ai';
 import { GenerateOutreachDto, OutreachResponseDto, OutreachType } from './dto/outreach.dto';
 import { GenerateSummaryDto, SummaryResponseDto, SummaryType } from './dto/summary.dto';
 
+// Mock AI response for now - in production, connect to OpenAI/Anthropic
 @Injectable()
 export class AIService {
-  private registry: AIRegistry;
-
-  constructor() {
-    // Initialize AI registry from environment config
-    this.registry = AIRegistry.createFromEnv();
-  }
-
   async generateOutreach(dto: GenerateOutreachDto): Promise<OutreachResponseDto> {
     const prompt = this.buildOutreachPrompt(dto);
     
-    const result = await this.registry.generate({
-      prompt,
-      temperature: 0.7,
-      maxTokens: 500,
-    });
-
-    const content = result.text;
+    // Mock AI generation - replace with actual AI call
+    const content = this.mockGenerate(prompt, 'outreach', dto.type);
     
     // Parse subject and body from generated content
     const lines = content.split('\n');
@@ -40,6 +23,7 @@ export class AIService {
       body = lines.slice(1).join('\n').trim();
     } else {
       body = content;
+      subject = `Reaching out to ${dto.leadName} at ${dto.leadCompany}`;
     }
 
     return {
@@ -57,13 +41,8 @@ export class AIService {
   async generateSummary(dto: GenerateSummaryDto): Promise<SummaryResponseDto> {
     const prompt = this.buildSummaryPrompt(dto);
     
-    const result = await this.registry.generate({
-      prompt,
-      temperature: 0.5,
-      maxTokens: this.getMaxTokensForLength(dto.maxLength),
-    });
-
-    const summary = result.text.trim();
+    // Mock AI generation - replace with actual AI call
+    const summary = this.mockGenerate(prompt, 'summary', dto.type);
     const originalLength = dto.content.length;
     const summaryLength = summary.length;
     
@@ -80,6 +59,41 @@ export class AIService {
         compressionRatio: `${Math.round((summaryLength / originalLength) * 100)}%`,
       },
     };
+  }
+
+  private mockGenerate(prompt: string, task: string, type: string): string {
+    // This is a mock implementation - replace with actual AI API call
+    // Example: OpenAI, Anthropic, or the @ai/core package
+    
+    if (task === 'outreach') {
+      if (type === 'email') {
+        return `Subject: Quick question about your lead generation
+
+Hi there,
+
+I noticed your company has been growing rapidly and wanted to reach out about how we might help accelerate your lead generation efforts.
+
+Our platform uses AI to identify high-quality leads that match your ideal customer profile, saving your sales team hours of manual research.
+
+Would you be open to a brief conversation about how this could work for ${prompt.includes('leadCompany') ? 'your company' : 'you'}?
+
+Best regards,
+[Your Name]`;
+      } else if (type === 'linkedin') {
+        return `Hi! I came across your profile and was impressed by your work at the company. I'd love to connect and learn more about your approach to lead generation. Perhaps there's a way we can help each other.`;
+      } else {
+        return `Quick question: Are you looking to improve your lead generation process? We help companies like yours find qualified leads faster.`;
+      }
+    } else {
+      // Summary mock
+      return `This content discusses business growth strategies and lead generation techniques. Key points include optimizing sales processes, leveraging technology for prospecting, and building sustainable customer acquisition channels.
+
+Key takeaways:
+• Focus on qualified leads over quantity
+• Use automation to scale outreach
+• Personalize messaging for better response rates
+• Measure and optimize continuously`;
+    }
   }
 
   private buildOutreachPrompt(dto: GenerateOutreachDto): string {

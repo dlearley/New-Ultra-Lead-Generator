@@ -91,4 +91,4 @@ export interface QueueConfig {
       delay: number;
     };
   };
-}
+}export type CrmType = 'salesforce' | 'hubspot' | 'pipedrive' | 'zoho' | 'other';
