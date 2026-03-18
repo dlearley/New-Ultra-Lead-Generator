@@ -7,6 +7,7 @@ import { AIModule } from './ai/ai.module';
 import { SearchModule } from './search/search.module';
 import { EnrichmentModule } from './enrichment/enrichment.module';
 import { AdvancedSearchModule } from './advanced-search/advanced-search.module';
+import { IntentModule } from './intent/intent.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -19,6 +20,7 @@ import { PrismaService } from './services/prisma.service';
     SearchModule,
     EnrichmentModule,
     AdvancedSearchModule,
+    IntentModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
