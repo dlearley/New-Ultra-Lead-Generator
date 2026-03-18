@@ -10,6 +10,7 @@ import { AdvancedSearchModule } from './advanced-search/advanced-search.module';
 import { IntentModule } from './intent/intent.module';
 import { BulkImportModule } from './bulk-import/bulk-import.module';
 import { CaptureModule } from './capture/capture.module';
+import { ScoringModule } from './scoring/scoring.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -25,6 +26,7 @@ import { PrismaService } from './services/prisma.service';
     IntentModule,
     BulkImportModule,
     CaptureModule,
+    ScoringModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

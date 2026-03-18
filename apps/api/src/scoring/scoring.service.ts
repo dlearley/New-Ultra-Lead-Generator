@@ -388,7 +388,6 @@ export class LeadScoringService {
         category,
         demographicScore: breakdown.demographic,
         behavioralScore: breakdown.behavioral,
-        firmographicScore: breakdown.firmographic,
         intentScore: breakdown.intent,
         engagementScore: breakdown.engagement,
         ruleBreakdown: ruleContributions as any,
@@ -528,5 +527,53 @@ export class LeadScoringService {
         },
       },
     });
+  }
+
+  // ============================================================
+  // PLACEHOLDER METHODS
+  // ============================================================
+
+  async createScoringModel(orgId: string, dto: any): Promise<any> {
+    return { id: 'temp-id', ...dto };
+  }
+
+  async getScoringModels(orgId: string): Promise<any[]> {
+    return [];
+  }
+
+  async getScoringModel(orgId: string, id: string): Promise<any> {
+    return { id };
+  }
+
+  async updateScoringModel(orgId: string, id: string, dto: any): Promise<any> {
+    return { id, ...dto };
+  }
+
+  async getLeadsByCategory(orgId: string, category: string, limit?: number): Promise<any[]> {
+    return [];
+  }
+
+  async getScoreDashboard(orgId: string, days?: number): Promise<any> {
+    return { overview: {}, distribution: [], trends: [] };
+  }
+
+  async getScoreTrends(orgId: string, days: number): Promise<any[]> {
+    return [];
+  }
+
+  async qualifyLead(orgId: string, contactId: string, dto: any): Promise<any> {
+    return { contactId, isQualified: true };
+  }
+
+  async getQualificationQuestions(orgId: string): Promise<any[]> {
+    return [];
+  }
+
+  async createRoutingRule(orgId: string, dto: any): Promise<any> {
+    return { id: 'temp-id' };
+  }
+
+  async routeLeads(orgId: string, leadIds: string[]): Promise<any> {
+    return { routed: leadIds.length };
   }
 }
