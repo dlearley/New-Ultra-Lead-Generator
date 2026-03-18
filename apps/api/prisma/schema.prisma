@@ -2640,3 +2640,362 @@ model SendTimeOptimization {
   @@index([organizationId])
   @@map("send_time_optimization")
 }
+// ============================================================================
+// LAYER 10: REAL-TIME ANALYTICS & REPORTING DASHBOARD
+// ============================================================================
+
+model Dashboard {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Dashboard Info
+  name            String
+  description     String?
+  
+  // Type
+  dashboardType   String   @default("custom") // custom, lead_gen, sales, marketing, executive
+  
+  // Layout
+  layout          Json     @default("{}")
+  // {
+  //   widgets: [
+  //     { id: "w1", type: "chart", x: 0, y: 0, w: 6, h: 4, config: {} },
+  //     { id: "w2", type: "metric", x: 6, y: 0, w: 3, h: 2, config: {} }
+  //   ]
+  // }
+  
+  // Filters
+  defaultFilters  Json     @default("{}")
+  
+  // Sharing
+  isShared        Boolean  @default(false)
+  sharedWith      String[] // User IDs
+  
+  // Role-based
+  allowedRoles    String[] @default([]) // sales, marketing, executive, admin
+  
+  // Refresh
+  autoRefresh     Boolean  @default(true)
+  refreshInterval Int      @default(300) // seconds
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([dashboardType])
+  @@map("dashboards")
+}
+
+model Widget {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Widget Info
+  name            String
+  widgetType      String   // chart_line, chart_bar, chart_pie, metric, table, funnel, leaderboard
+  
+  // Data Source
+  dataSource      String   // leads, contacts, deals, activities, intent, enrichment
+  metric          String   // count, sum, avg, conversion_rate, growth
+  
+  // Configuration
+  config          Json     @default("{}")
+  // {
+  //   chartType: "line",
+  //   xAxis: "date",
+  //   yAxis: "count",
+  //   groupBy: "source",
+  //   filters: { dateRange: "30d" },
+  //   colors: ["#3b82f6", "#10b981"]
+  // }
+  
+  // Query
+  queryConfig     Json     @default("{}")
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([widgetType])
+  @@map("widgets")
+}
+
+model AnalyticsMetric {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Metric Info
+  name            String
+  category        String   // lead_gen, conversion, revenue, engagement, intent
+  
+  // Value
+  value           Float
+  previousValue   Float?
+  changePercent   Float?
+  
+  // Dimensions
+  dimension       String?  // source, campaign, channel, rep
+  dimensionValue  String?
+  
+  // Time
+  period          String   @default("daily") // hourly, daily, weekly, monthly
+  date            DateTime @default(now())
+  
+  // Metadata
+  metadata        Json?
+  
+  @@index([organizationId])
+  @@index([category])
+  @@index([date])
+  @@map("analytics_metrics")
+}
+
+model FunnelStage {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Funnel Info
+  name            String
+  funnelType      String   @default("lead_to_customer") // lead_to_customer, awareness_to_purchase
+  stageNumber     Int
+  
+  // Stage Definition
+  stageName       String
+  criteria        Json     // { event: "form_submitted", properties: {} }
+  
+  // Counts
+  entryCount      Int      @default(0)
+  exitCount       Int      @default(0)
+  conversionRate  Float    @default(0)
+  
+  // Time
+  avgTimeInStage  Int?     // minutes
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([funnelType])
+  @@map("funnel_stages")
+}
+
+model AttributionModel {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  name            String
+  modelType       String   @default("first_touch") // first_touch, last_touch, linear, time_decay, position_based, data_driven
+  
+  // Configuration
+  config          Json     @default("{}")
+  // {
+  //   lookbackWindow: 30, // days
+  //   touchpointWeights: { first: 40, last: 40, middle: 20 }
+  // }
+  
+  isDefault       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("attribution_models")
+}
+
+model AttributionTouchpoint {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Contact
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Touchpoint
+  touchpointType  String   // ad_click, email_open, website_visit, content_download, webinar
+  source          String
+  campaign        String?
+  channel         String?
+  
+  // Timing
+  touchpointAt    DateTime
+  
+  // Value
+  attributedValue Float?
+  attributionPercent Float?
+  
+  // Conversion
+  convertedToId   String?  // Contact/Deal ID that converted
+  conversionValue Float?
+  
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([touchpointAt])
+  @@map("attribution_touchpoints")
+}
+
+model Report {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Report Info
+  name            String
+  description     String?
+  
+  // Type
+  reportType      String   // leads, conversions, pipeline, roi, custom
+  
+  // Configuration
+  config          Json     @default("{}")
+  // {
+  //   filters: {},
+  //   columns: [],
+  //   groupBy: [],
+  //   sortBy: {},
+  //   aggregations: []
+  // }
+  
+  // Scheduling
+  isScheduled     Boolean  @default(false)
+  scheduleConfig  Json?    // { frequency: "weekly", day: "monday", time: "09:00" }
+  recipients      String[] @default([])
+  
+  // Last Run
+  lastRunAt       DateTime?
+  lastRunStatus   String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([reportType])
+  @@map("reports")
+}
+
+model AIInsight {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Insight Info
+  title           String
+  description     String   @db.Text
+  insightType     String   // trend, anomaly, recommendation, prediction, benchmark
+  
+  // Category
+  category        String   // email, conversion, lead_source, pipeline, roi
+  
+  // Data
+  metric          String
+  currentValue    Float
+  previousValue   Float
+  changePercent   Float
+  
+  // Recommendation
+  recommendation  String?  @db.Text
+  actionItems     String[] @default([])
+  
+  // Priority
+  priority        String   @default("medium") // high, medium, low
+  
+  // Status
+  status          String   @default("new") // new, acknowledged, resolved, dismissed
+  acknowledgedById String?
+  acknowledgedAt  DateTime?
+  
+  // Auto-generated
+  isAutoGenerated Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([priority])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_insights")
+}
+
+model BenchmarkData {
+  id              String   @id @default(cuid())
+  
+  // Benchmark Info
+  metric          String
+  industry        String
+  companySize     String   // startup, smb, mid_market, enterprise
+  
+  // Values
+  p10             Float    // 10th percentile
+  p25             Float    // 25th percentile
+  p50             Float    // median
+  p75             Float    // 75th percentile
+  p90             Float    // 90th percentile
+  
+  // Your performance
+  yourValue       Float?
+  yourPercentile  Float?
+  
+  // Period
+  period          String   @default("2024_q1") // quarterly
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([metric])
+  @@index([industry])
+  @@index([companySize])
+  @@map("benchmark_data")
+}
+
+model RevenueForecast {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Forecast
+  forecastDate    DateTime
+  predictedRevenue Float
+  confidenceLow   Float
+  confidenceHigh  Float
+  
+  // Breakdown
+  bySource        Json     // { "organic": 50000, "paid": 75000, "email": 25000 }
+  byChannel       Json?
+  
+  // Factors
+  factors         Json     // Factors influencing the forecast
+  
+  // Actual (filled in later)
+  actualRevenue   Float?
+  accuracy        Float?
+  
+  createdAt       DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([forecastDate])
+  @@map("revenue_forecasts")
+}
+
+model SavedFilter {
+  id              String   @id @default(cuid())
+  organizationId  String
+  userId          String
+  
+  name            String
+  filterType      String   // leads, contacts, deals, activities
+  
+  // Filter Configuration
+  filters         Json     // { dateRange: "30d", source: ["organic", "paid"], status: ["active"] }
+  
+  // Sharing
+  isDefault       Boolean  @default(false)
+  isShared        Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([filterType])
+  @@map("saved_filters")
+}
