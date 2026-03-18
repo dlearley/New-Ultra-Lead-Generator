@@ -1046,6 +1046,56 @@ enum BuyingStage {
   churned
 }
 
+// ============================================================================
+// BULK IMPORT
+// ============================================================================
+
+model BulkImportJob {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // File info
+  fileName        String
+  fileSize        Int
+  
+  // Status
+  status          ImportJobStatus @default(pending)
+  
+  // Progress
+  totalRows       Int @default(0)
+  processedRows   Int @default(0)
+  validRows       Int @default(0)
+  invalidRows     Int @default(0)
+  createdRecords  Int @default(0)
+  updatedRecords  Int @default(0)
+  skippedRows     Int @default(0)
+  
+  // Configuration
+  config          Json
+  
+  // Errors
+  errors          Json @default("[]")
+  
+  // Timestamps
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("bulk_import_jobs")
+}
+
+enum ImportJobStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
 // Legacy model - keeping for backwards compatibility
 model BusinessLead {
   id             String        @id @default(cuid())
