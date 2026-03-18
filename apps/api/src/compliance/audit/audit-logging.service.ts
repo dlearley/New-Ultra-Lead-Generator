@@ -366,7 +366,8 @@ export class AuditLoggingService {
 
     const topUsers = Object.values(userCounts)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .slice(0, 10)
+      .map(u => ({ userId: u.userId, email: u.email, actionCount: u.count }));
 
     return {
       totalEvents: logs.length,

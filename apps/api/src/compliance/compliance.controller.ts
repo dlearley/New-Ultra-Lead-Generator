@@ -77,7 +77,7 @@ export class ComplianceController {
   async recordConsent(
     @Body() dto: {
       contactId: string;
-      consentType: string;
+      consentType: 'email' | 'phone' | 'sms' | 'marketing' | 'data_processing';
       granted: boolean;
       grantedVia: string;
       source?: string;
@@ -195,10 +195,10 @@ export class ComplianceController {
   @Post('deletion-request')
   async submitDeletionRequest(
     @Body() dto: {
-      subjectType: string;
+      subjectType: 'contact' | 'company' | 'user' | 'all_data';
       subjectId?: string;
       subjectEmail?: string;
-      requestType: string;
+      requestType: 'gdpr_deletion' | 'ccpa_deletion' | 'data_cleanup' | 'right_to_be_forgotten';
       reason?: string;
       scope: any;
     },
@@ -268,7 +268,7 @@ export class ComplianceController {
 
   @Post('roles')
   async createRole(
-    @Body() dto: { name: string; description?: string; permissions: any; dataScope?: string },
+    @Body() dto: { name: string; description?: string; permissions: any; dataScope?: 'all' | 'team' | 'own' },
     @CurrentUser() user: UserPayload,
   ) {
     return this.rbac.createRole(user.organizationId, dto);
