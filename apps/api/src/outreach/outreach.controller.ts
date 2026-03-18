@@ -5,6 +5,9 @@ import { SequenceService } from './sequences/sequence.service';
 import { AIEmailWriterService } from './ai/ai-email-writer.service';
 import { LinkedInService } from './channels/linkedin.service';
 import { ABTestingService } from './ab-testing/ab-testing.service';
+import { DialerService } from './dialer/dialer.service';
+import { SmsService } from './sms/sms.service';
+import { OptimalTimeService } from './optimal-time/optimal-time.service';
 
 interface UserPayload {
   userId: string;
@@ -20,6 +23,9 @@ export class OutreachController {
     private readonly aiEmailWriter: AIEmailWriterService,
     private readonly linkedInService: LinkedInService,
     private readonly abTestingService: ABTestingService,
+    private readonly dialerService: DialerService,
+    private readonly smsService: SmsService,
+    private readonly optimalTimeService: OptimalTimeService,
   ) {}
 
   // ============================================================
@@ -377,5 +383,230 @@ export class OutreachController {
     @CurrentUser() user: UserPayload,
   ) {
     return this.abTestingService.getTestRecommendations(user.organizationId);
+  }
+
+  // ============================================================
+  // DIALER
+  // ============================================================
+
+  @Post('dialer/sessions')
+  async startDialerSession(
+    @Body() dto: {
+      campaignId: string;
+      config: {
+        mode: 'manual' | 'power' | 'predictive' | 'preview';
+        localPresence: boolean;
+        localAreaCodes?: string[];
+        recordCalls?: boolean;
+        voicemailDrop?: boolean;
+      };
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.startDialerSession(
+      user.organizationId,
+      user.userId,
+      dto.campaignId,
+      dto.config,
+    );
+  }
+
+  @Delete('dialer/sessions/:sessionId')
+  async endDialerSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.endDialerSession(sessionId);
+  }
+
+  @Post('dialer/dial')
+  async dialContact(
+    @Body() dto: {
+      sessionId: string;
+      contactId: string;
+      config: any;
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.dialContact(dto.sessionId, dto.contactId, dto.config);
+  }
+
+  @Post('calls/:callId/end')
+  async endCall(
+    @Param('callId') callId: string,
+    @Body() dto: {
+      duration: number;
+      notes?: string;
+      disposition?: string;
+      recordingUrl?: string;
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    await this.dialerService.endCall(callId, dto);
+    return { success: true };
+  }
+
+  @Post('calls/:callId/voicemail-drop')
+  async dropVoicemail(
+    @Param('callId') callId: string,
+    @Body() dto: { templateId: string },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.dropVoicemail(callId, dto.templateId);
+  }
+
+  @Get('calls/recordings')
+  async getCallRecordings(
+    @Query('agentId') agentId: string,
+    @Query('contactId') contactId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.getRecordings(user.organizationId, {
+      agentId,
+      contactId,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    });
+  }
+
+  @Get('dialer/stats')
+  async getDialerStats(
+    @Query('campaignId') campaignId: string,
+    @Query('period') period: 'today' | 'week' | 'month',
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.getCallStats(
+      user.organizationId,
+      campaignId,
+      period || 'today',
+    );
+  }
+
+  @Post('dialer/local-numbers')
+  async provisionLocalNumbers(
+    @Body() dto: { areaCodes: string[] },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dialerService.provisionLocalNumbers(user.organizationId, dto.areaCodes);
+  }
+
+  // ============================================================
+  // SMS / WHATSAPP
+  // ============================================================
+
+  @Post('sms/send')
+  async sendSMS(
+    @Body() dto: { to: string; body: string; from?: string },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.smsService.sendSMS(user.organizationId, dto);
+  }
+
+  @Post('sms/send-bulk')
+  async sendBulkSMS(
+    @Body() dto: { messages: Array<{ to: string; body: string }> },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.smsService.sendBulkSMS(user.organizationId, dto.messages);
+  }
+
+  @Post('sms/schedule')
+  async scheduleSMS(
+    @Body() dto: {
+      contactId: string;
+      body: string;
+      scheduledAt: string;
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.smsService.scheduleSMS(
+      user.organizationId,
+      dto.contactId,
+      { body: dto.body },
+      new Date(dto.scheduledAt),
+    );
+  }
+
+  @Post('sms/templates')
+  async createSMSTemplate(
+    @Body() dto: { name: string; body: string; category?: string },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.smsService.createSMSTemplate(user.organizationId, dto);
+  }
+
+  @Get('sms/templates')
+  async getSMSTemplates(
+    @Query('category') category: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.smsService.getSMSTemplates(user.organizationId, category);
+  }
+
+  @Post('whatsapp/send')
+  async sendWhatsApp(
+    @Body() dto: { to: string; body: string; templateName?: string; templateData?: any },
+    @CurrentUser() user: UserPayload,
+  ) {
+    if (dto.templateName) {
+      return this.smsService.sendWhatsAppTemplate(
+        user.organizationId,
+        dto.to,
+        dto.templateName,
+        dto.templateData || {},
+      );
+    }
+    return this.smsService.sendWhatsApp(user.organizationId, dto);
+  }
+
+  // ============================================================
+  // OPTIMAL SEND TIME
+  // ============================================================
+
+  @Post('optimal-time/calculate/:contactId')
+  async calculateOptimalTime(
+    @Param('contactId') contactId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.optimalTimeService.calculateOptimalTime(user.organizationId, contactId);
+  }
+
+  @Post('optimal-time/batch')
+  async batchCalculateOptimalTimes(
+    @Body() dto: { contactIds: string[] },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.optimalTimeService.batchCalculateOptimalTimes(
+      user.organizationId,
+      dto.contactIds,
+    );
+  }
+
+  @Get('optimal-time/organization')
+  async getOrganizationBestTimes(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.optimalTimeService.getOrganizationBestTimes(user.organizationId);
+  }
+
+  @Get('optimal-time/ai-recommendations/:contactId')
+  async getAIRecommendations(
+    @Param('contactId') contactId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.optimalTimeService.getAIRecommendations(user.organizationId, contactId);
+  }
+
+  // ============================================================
+  // MOBILE ALERTS
+  // ============================================================
+
+  @Get('mobile/alerts')
+  async getMobileAlerts(
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.optimalTimeService.getMobileAlerts(user.userId);
   }
 }
