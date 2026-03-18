@@ -1382,3 +1382,345 @@ model Conversion {
   @@index([convertedAt])
   @@map("conversions")
 }
+// ============================================================================
+// LAYER 7: AI-DRIVEN LEAD SCORING & QUALIFICATION
+// ============================================================================
+
+model LeadScoringModel {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  
+  // Model Type
+  modelType       String   @default("rule_based") // rule_based, ai_predictive, hybrid
+  status          String   @default("active") // active, paused, archived
+  
+  // Scoring Rules
+  rules           Json     @default("[]") // Array of scoring rules
+  
+  // Score Ranges
+  hotThreshold    Int      @default(70)   // 70-100 = Hot
+  warmThreshold   Int      @default(40)   // 40-69 = Warm
+  // 0-39 = Cold (implicit)
+  
+  // Auto-qualification
+  autoQualify     Boolean  @default(false)
+  qualificationRules Json? @default("{}")
+  
+  // Routing
+  routingRules    Json?    @default("{}") // Assignment rules by score
+  
+  // AI Model (if applicable)
+  aiModelId       String?  // Reference to trained model
+  aiWeights       Json?    // AI model weights
+  
+  // Performance
+  accuracy        Float?   // Model accuracy score
+  lastTrainedAt   DateTime?
+  
+  // Stats
+  leadsScored     Int      @default(0)
+  conversions     Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  scores          LeadScore[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("lead_scoring_models")
+}
+
+model LeadScore {
+  id              String   @id @default(cuid())
+  
+  // Reference
+  modelId         String
+  model           LeadScoringModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  organizationId  String
+  
+  // Lead being scored
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Scores
+  totalScore      Int      @default(0)
+  maxPossible     Int      @default(100)
+  
+  // Category
+  category        String   @default("cold") // hot, warm, cold
+  
+  // Breakdown
+  demographicScore Int     @default(0)
+  behavioralScore  Int     @default(0)
+  firmographicScore Int    @default(0)
+  intentScore      Int     @default(0)
+  engagementScore  Int     @default(0)
+  
+  // Rule contributions
+  ruleBreakdown   Json     @default("[]") // Which rules contributed how much
+  
+  // AI Predictions
+  conversionProbability Float? // 0-100 predicted conversion chance
+  predictedValue   Float?      // Predicted deal value
+  timeToClose      Int?        // Predicted days to close
+  
+  // Qualification
+  qualified       Boolean  @default(false)
+  qualificationData Json?  // Answers to qualification questions
+  
+  // Routing
+  assignedToId    String?  // User ID assigned to
+  assignedAt      DateTime?
+  
+  // History
+  previousScore   Int?     // Last score before this one
+  scoreChange     Int      @default(0)
+  
+  calculatedAt    DateTime @default(now())
+
+  @@unique([modelId, contactId])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([category])
+  @@index([totalScore])
+  @@index([calculatedAt])
+  @@map("lead_scores")
+}
+
+model ScoringRule {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?  // Plain-English description
+  
+  // Rule Type
+  ruleType        String   // demographic, behavioral, firmographic, intent, engagement, qualification
+  
+  // Condition
+  condition       Json     // { field, operator, value }
+  // Examples:
+  // { field: "company.size", operator: "gte", value: 100 }
+  // { field: "behavior.pagesVisited", operator: "contains", value: "/pricing" }
+  // { field: "intent.signals", operator: "has", value: "pricing_view" }
+  
+  // Action
+  action          Json     // { type: "add_points" | "set_flag", value: 20 }
+  
+  // Points
+  points          Int      @default(0) // Can be negative for penalties
+  
+  // Cap
+  maxPoints       Int?     // Maximum points this rule can award
+  
+  // Frequency
+  frequency       String   @default("once") // once, daily, per_session, unlimited
+  
+  // Active
+  isActive        Boolean  @default(true)
+  priority        Int      @default(0) // Higher = evaluated first
+  
+  // Stats
+  timesTriggered  Int      @default(0)
+  totalPointsAwarded Int   @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([ruleType])
+  @@index([isActive])
+  @@map("scoring_rules")
+}
+
+model QualificationQuestion {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Question
+  question        String
+  description     String?
+  
+  // Type
+  questionType    String   // single_choice, multiple_choice, text, number, boolean, scale
+  
+  // Options (for choice types)
+  options         Json?    // [{ value, label, points, flag }]
+  
+  // Scoring
+  isScoring       Boolean  @default(true) // Does this affect score?
+  weight          Float    @default(1.0)  // Question weight in scoring
+  
+  // Qualification
+  disqualifyIf    Json?    // Conditions that disqualify
+  requiredForQualification Boolean @default(false)
+  
+  // Display
+  displayCondition Json?   // When to show this question
+  order           Int      @default(0)
+  
+  // Active
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("qualification_questions")
+}
+
+model LeadQualification {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Lead
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Qualification
+  isQualified     Boolean  @default(false)
+  qualificationScore Int   @default(0)
+  
+  // Answers
+  answers         Json     // { questionId: { answer, score, timestamp } }
+  
+  // BANT Criteria
+  hasBudget       Boolean?
+  hasAuthority    Boolean?
+  hasNeed         Boolean?
+  hasTimeline     Boolean?
+  
+  // Qualification Method
+  method          String   // chatbot, form, manual, ai_inferred
+  qualifiedById   String?  // User who qualified (if manual)
+  
+  // Disqualification
+  isDisqualified  Boolean  @default(false)
+  disqualificationReason String?
+  
+  qualifiedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([isQualified])
+  @@map("lead_qualifications")
+}
+
+model ScoreHistory {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Score snapshot
+  score           Int
+  category        String
+  
+  // What changed
+  triggerType     String   // rule_triggered, behavior, time_decay, manual_adjustment
+  triggerId       String?  // ID of rule or event
+  
+  // Change details
+  previousScore   Int
+  change          Int
+  reason          String?
+  
+  // Snapshot
+  ruleBreakdown   Json     // Score breakdown at this point
+  
+  recordedAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([recordedAt])
+  @@map("score_history")
+}
+
+model SalesRouting {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  
+  // Routing Rules
+  rules           Json     // [{ condition, assignTo, priority }]
+  
+  // Assignment
+  defaultAssigneeId String?
+  roundRobinUsers String[] // For round-robin assignment
+  
+  // Criteria
+  minScore        Int?     // Minimum score to trigger
+  categories      String[] // hot, warm
+  
+  // Auto-assignment
+  autoAssign      Boolean  @default(true)
+  notifyAssignee  Boolean  @default(true)
+  
+  // Escalation
+  escalationRules Json?    // Escalate if not contacted in X hours
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("sales_routing")
+}
+
+model PredictiveModel {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  
+  // Model Details
+  modelType       String   // conversion_probability, deal_value, time_to_close
+  algorithm       String   // logistic_regression, random_forest, neural_network
+  
+  // Training Data
+  trainingDataSize Int
+  trainedAt       DateTime
+  
+  // Performance
+  accuracy        Float
+  precision       Float
+  recall          Float
+  f1Score         Float
+  
+  // Features Used
+  features        Json     // List of features and importance
+  
+  // Model Weights
+  weights         Json     // Model coefficients
+  
+  // Status
+  status          String   @default("active") // active, retraining, deprecated
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([modelType])
+  @@index([status])
+  @@map("predictive_models")
+}
