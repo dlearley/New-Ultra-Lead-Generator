@@ -15,6 +15,8 @@ import { CrmSyncService } from './sync/crm-sync.service';
 import { WebhookService } from './webhooks/webhook.service';
 import { SalesforceAdapter } from './adapters/salesforce.adapter';
 import { HubSpotAdapter } from './adapters/hubspot.adapter';
+import { ConflictResolutionService } from './sync/conflict-resolution.service';
+import { DataMappingService } from './sync/data-mapping.service';
 import {
   CreateCrmConnectionDto,
   UpdateCrmConnectionDto,
@@ -37,6 +39,8 @@ export class IntegrationsController {
     private readonly webhookService: WebhookService,
     private readonly salesforceAdapter: SalesforceAdapter,
     private readonly hubspotAdapter: HubSpotAdapter,
+    private readonly conflictResolutionService: ConflictResolutionService,
+    private readonly dataMappingService: DataMappingService,
   ) {}
 
   // ============================================================
@@ -236,6 +240,113 @@ export class IntegrationsController {
     @CurrentUser() user: UserPayload,
   ) {
     return this.webhookService.retryDelivery(user.organizationId, deliveryId);
+  }
+
+  // ============================================================
+  // CONFLICT RESOLUTION
+  // ============================================================
+
+  @Get('crm/connections/:id/conflicts/rules')
+  async getConflictRules(
+    @Param('id') connectionId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.conflictResolutionService.getResolutionRules(connectionId);
+  }
+
+  @Put('crm/connections/:id/conflicts/rules')
+  async setConflictRules(
+    @Param('id') connectionId: string,
+    @Body() dto: { type: string; fieldRules?: Record<string, string> },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.conflictResolutionService.setResolutionRules(connectionId, {
+      type: dto.type as any,
+      fieldRules: dto.fieldRules as Record<string, 'crm' | 'local' | 'newer' | 'merge'>,
+    });
+  }
+
+  @Post('crm/connections/:id/conflicts/preview')
+  async previewConflictResolution(
+    @Param('id') connectionId: string,
+    @Body() dto: {
+      conflict: any;
+      strategy: { type: string; fieldRules?: Record<string, string> };
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.conflictResolutionService.previewResolution(dto.conflict, {
+      type: dto.strategy.type as any,
+      fieldRules: dto.strategy.fieldRules as Record<string, 'crm' | 'local' | 'newer' | 'merge'>,
+    });
+  }
+
+  @Get('crm/connections/:id/conflicts/stats')
+  async getConflictStats(
+    @Param('id') connectionId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.conflictResolutionService.getConflictStats(user.organizationId);
+  }
+
+  // ============================================================
+  // DATA MAPPING
+  // ============================================================
+
+  @Get('mapping/fields/:entityType')
+  async getAvailableFields(
+    @Param('entityType') entityType: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dataMappingService.getAvailableFields(entityType);
+  }
+
+  @Get('mapping/templates')
+  async getMappingTemplates(
+    @Query('provider') provider: string,
+    @Query('entityType') entityType: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dataMappingService.getMappingTemplates(provider, entityType);
+  }
+
+  @Post('crm/connections/:id/mapping/apply-template')
+  async applyMappingTemplate(
+    @Param('id') connectionId: string,
+    @Body() dto: { templateId: string },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dataMappingService.applyTemplate(connectionId, dto.templateId);
+  }
+
+  @Post('mapping/preview')
+  async previewMapping(
+    @Body() dto: {
+      sampleData: any;
+      mappings: any[];
+      direction: 'to_crm' | 'from_crm';
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.dataMappingService.previewMapping(
+      dto.sampleData,
+      dto.mappings,
+      dto.direction,
+    );
+  }
+
+  @Post('mapping/test-transform')
+  async testTransform(
+    @Body() dto: {
+      value: any;
+      transform: { type: string; config?: any };
+    },
+    @CurrentUser() user: UserPayload,
+  ) {
+    return {
+      input: dto.value,
+      output: this.dataMappingService.transformValue(dto.value, dto.transform as any),
+    };
   }
 
   // ============================================================
