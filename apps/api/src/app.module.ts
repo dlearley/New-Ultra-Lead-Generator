@@ -9,6 +9,7 @@ import { EnrichmentModule } from './enrichment/enrichment.module';
 import { AdvancedSearchModule } from './advanced-search/advanced-search.module';
 import { IntentModule } from './intent/intent.module';
 import { BulkImportModule } from './bulk-import/bulk-import.module';
+import { CaptureModule } from './capture/capture.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -23,6 +24,7 @@ import { PrismaService } from './services/prisma.service';
     AdvancedSearchModule,
     IntentModule,
     BulkImportModule,
+    CaptureModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
