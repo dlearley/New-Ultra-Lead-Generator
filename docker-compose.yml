@@ -1,72 +1,79 @@
 version: '3.8'
 
 services:
-  postgres-ultra:
-    image: postgres:14
-    container_name: ultra-postgres
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ultra-leads-postgres
     environment:
       POSTGRES_USER: ultra_user
       POSTGRES_PASSWORD: ultra_pass
-      POSTGRES_DB: ultra_db
+      POSTGRES_DB: ultra_leads
     ports:
       - "5433:5432"
     volumes:
-      - ultra_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ultra_user"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ultra_user -d ultra_leads"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
-  redis-ultra:
-    image: redis:6
-    container_name: ultra-redis
+  # Redis (for queues and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: ultra-leads-redis
     ports:
       - "6380:6379"
     volumes:
-      - ultra_redis_data:/data
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
+      timeout: 3s
       retries: 5
 
-  api-ultra:
-    build: .
-    container_name: ultra-api
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  # API Application
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: ultra-leads-api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://ultra_user:ultra_pass@postgres:5432/ultra_leads?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-this-in-production}
+      CLEARBIT_API_KEY: ${CLEARBIT_API_KEY:-}
+      HUNTER_API_KEY: ${HUNTER_API_KEY:-}
+      BUILTWITH_API_KEY: ${BUILTWITH_API_KEY:-}
+      NEWSAPI_KEY: ${NEWSAPI_KEY:-}
     ports:
-      - "8000:8000"
-    environment:
-      DATABASE_URL: postgresql://ultra_user:ultra_pass@postgres-ultra:5432/ultra_db
-      REDIS_URL: redis://redis-ultra:6379/0
-      CELERY_BROKER_URL: redis://redis-ultra:6379/1
-      CELERY_RESULT_BACKEND: redis://redis-ultra:6379/2
-    volumes:
-      - .:/app
+      - "3001:3001"
     depends_on:
-      postgres-ultra:
+      postgres:
         condition: service_healthy
-      redis-ultra:
+      redis:
         condition: service_healthy
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
 
-  worker-ultra:
-    build: .
-    container_name: ultra-worker
-    command: celery -A app.worker.celery_app worker --loglevel=info
+  # Web Application
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: ultra-leads-web
     environment:
-      DATABASE_URL: postgresql://ultra_user:ultra_pass@postgres-ultra:5432/ultra_db
-      REDIS_URL: redis://redis-ultra:6379/0
-      CELERY_BROKER_URL: redis://redis-ultra:6379/1
-      CELERY_RESULT_BACKEND: redis://redis-ultra:6379/2
-    volumes:
-      - .:/app
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
     depends_on:
-      postgres-ultra:
-        condition: service_healthy
-      redis-ultra:
-        condition: service_healthy
+      - api
 
 volumes:
-  ultra_postgres_data:
-  ultra_redis_data:
+  postgres_data:
+  redis_data:
