@@ -15,7 +15,7 @@ export interface HealthStatus {
 export interface CrmAdapter {
   name: string;
   testConnection(credentials: CrmCredentials): Promise<boolean>;
-  pushLead(lead: BusinessLeadData, mapping: FieldMappingData): Promise<CrmPushResult>;
+  pushLead(lead: BusinessLeadData, fieldMappings: FieldMappingData[]): Promise<CrmPushResult>;
   getFields(): Promise<any[]>;
 }
 
@@ -26,6 +26,12 @@ export interface CrmCredentials {
   refreshToken?: string;
   accessToken?: string;
   instanceUrl?: string;
+  // Provider-specific credentials
+  apiToken?: string;
+  companyDomain?: string;
+  username?: string;
+  password?: string;
+  securityToken?: string;
 }
 
 export interface BusinessLeadData {
@@ -52,6 +58,9 @@ export interface BusinessLeadData {
 export interface FieldMappingData {
   sourceField: string;
   targetField: string;
+  fieldType?: string;
+  defaultValue?: string;
+  isRequired?: boolean;
   transform?: string;
 }
 
@@ -60,4 +69,28 @@ export interface CrmPushResult {
   crmId?: string;
   message?: string;
   error?: string;
+  errorMessage?: string;
+  responseData?: any;
+}
+
+// Additional types for CRM
+export interface SyncJobData {
+  organizationId: string;
+  businessLeadId: string;
+  crmType: string;
+  id: string;
+  crmConfigId: string;
+  status: string;
+  entityType: string;
+  totalRecords: number;
+  processedRecords: number;
+  successCount: number;
+  errorCount: number;
+}
+
+// Extended CrmAdapter with methods used by services
+export interface ExtendedCrmAdapter extends CrmAdapter {
+  authenticate(credentials: CrmCredentials): Promise<boolean>;
+  getAvailableFields(): Promise<string[]>;
+  validateFieldMapping(fieldMapping: FieldMappingData): Promise<boolean>;
 }

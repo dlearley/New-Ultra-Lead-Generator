@@ -1,4 +1,4 @@
-import { CrmAdapter, CrmType } from '../types';
+import { ExtendedCrmAdapter as CrmAdapter, CrmType } from '../types';
 import { SalesforceAdapter } from './salesforce';
 import { HubSpotAdapter } from './hubspot';
 import { PipedriveAdapter } from './pipedrive';

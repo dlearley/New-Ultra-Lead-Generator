@@ -176,7 +176,7 @@ export default function IntegrationsPage() {
             <div>
               <h4 className="font-medium text-gray-900 mb-2">Pipedrive Setup</h4>
               <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
-                <li>Go to Company Settings > API in Pipedrive</li>
+                <li>Go to Company Settings &gt; API in Pipedrive</li>
                 <li>Generate a new API token</li>
                 <li>Note down your company domain</li>
                 <li>Configure the integration with your credentials</li>

@@ -2,7 +2,7 @@ import { Queue, Worker, Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { CrmAdapterFactory } from '../adapters';
-import { SyncJobData, BusinessLeadData, FieldMappingData } from '../types';
+import { SyncJobData, BusinessLeadData, FieldMappingData, CrmType } from '../types';
 import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
@@ -87,7 +87,7 @@ export const crmSyncWorker = new Worker(
       }
 
       // Create CRM adapter and authenticate
-      const adapter = CrmAdapterFactory.createAdapter(crmType);
+      const adapter = CrmAdapterFactory.createAdapter(crmType as CrmType);
       const isAuthenticated = await adapter.authenticate(crmConfig.credentials as any);
 
       if (!isAuthenticated) {

@@ -80,7 +80,7 @@ export class ClearbitProvider implements EnrichmentProvider {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const result: CompanyEnrichmentResult = {
         name: data.name,
@@ -177,7 +177,7 @@ export class ClearbitProvider implements EnrichmentProvider {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const person = data.person;
       const company = data.company;
 

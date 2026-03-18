@@ -3,15 +3,27 @@ import { CrmAdapter, CrmCredentials, BusinessLeadData, FieldMappingData, CrmPush
 export abstract class BaseCrmAdapter implements CrmAdapter {
   protected crmType: string;
   protected credentials: CrmCredentials;
+  name: string;
 
   constructor(crmType: string) {
     this.crmType = crmType;
+    this.name = crmType;
   }
 
   abstract authenticate(credentials: CrmCredentials): Promise<boolean>;
   abstract pushLead(leadData: BusinessLeadData, fieldMappings: FieldMappingData[]): Promise<CrmPushResult>;
   abstract validateFieldMapping(fieldMapping: FieldMappingData): Promise<boolean>;
   abstract getAvailableFields(): Promise<string[]>;
+
+  // Implement CrmAdapter interface
+  async testConnection(credentials: CrmCredentials): Promise<boolean> {
+    return this.authenticate(credentials);
+  }
+
+  async getFields(): Promise<any[]> {
+    const fields = await this.getAvailableFields();
+    return fields.map((f) => ({ name: f, label: f }));
+  }
 
   protected transformLeadData(leadData: BusinessLeadData, fieldMappings: FieldMappingData[]): Record<string, any> {
     const transformed: Record<string, any> = {};

@@ -91,7 +91,7 @@ export class BulkImportService {
     const config = job.config as ImportConfigDto;
 
     // Parse CSV
-    const records = csv.parse(csvContent, {
+    const records: Array<Record<string, string>> = (csv.parse as any)(csvContent, {
       columns: config.skipFirstRow ? true : false,
       delimiter: config.delimiter || ',',
       encoding: config.encoding || 'utf-8',
@@ -100,7 +100,7 @@ export class BulkImportService {
 
     const detectedColumns = config.skipFirstRow
       ? Object.keys(records[0] || {})
-      : records[0]?.map((_: unknown, i: number) => `Column ${i + 1}`) || [];
+      : (records as any)[0]?.map((_: unknown, i: number) => `Column ${i + 1}`) || [];
 
     // Suggest column mapping
     const suggestedMapping = this.suggestColumnMapping(detectedColumns);
@@ -135,7 +135,7 @@ export class BulkImportService {
     const warnings: ImportValidationResult['warnings'] = [];
 
     // Parse CSV
-    const records = csv.parse(csvContent, {
+    const records: Array<Record<string, string>> = (csv.parse as any)(csvContent, {
       columns: true,
       delimiter: config.delimiter || ',',
       encoding: config.encoding || 'utf-8',
@@ -255,7 +255,7 @@ export class BulkImportService {
       });
 
       // Parse CSV
-      const records = csv.parse(csvContent, {
+      const records: Array<Record<string, string>> = (csv.parse as any)(csvContent, {
         columns: true,
         delimiter: config.delimiter || ',',
         encoding: config.encoding || 'utf-8',

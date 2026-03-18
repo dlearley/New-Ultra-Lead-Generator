@@ -91,7 +91,7 @@ export class HunterProvider implements EnrichmentProvider {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
 
-      const data: HunterEmailVerifierResponse = await response.json();
+      const data = await response.json() as HunterEmailVerifierResponse;
 
       if (!data.data) {
         return {
@@ -166,7 +166,7 @@ export class HunterProvider implements EnrichmentProvider {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
 
-      const data: HunterEmailFinderResponse = await response.json();
+      const data = await response.json() as HunterEmailFinderResponse;
 
       if (!data.data?.email) {
         return {
@@ -224,10 +224,10 @@ export class HunterProvider implements EnrichmentProvider {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       const emails =
-        data.data?.emails?.map(
+        data?.emails?.map(
           (e: {
             value: string;
             first_name?: string;

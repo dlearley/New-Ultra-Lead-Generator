@@ -75,7 +75,7 @@ export class BuiltWithProvider implements EnrichmentProvider {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
 
-      const data: BuiltWithResponse = await response.json();
+      const data = await response.json() as BuiltWithResponse;
 
       if (!data.Results?.[0]?.Result?.Technologies) {
         return {
@@ -161,7 +161,7 @@ export class BuiltWithProvider implements EnrichmentProvider {
           throw new Error(`HTTP ${response.status}`);
         }
 
-        const data: BuiltWithResponse = await response.json();
+        const data = await response.json() as BuiltWithResponse;
 
         batch.forEach((domain) => {
           const resultData = data.Results?.find(
