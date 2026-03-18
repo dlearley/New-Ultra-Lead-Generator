@@ -2999,3 +2999,317 @@ model SavedFilter {
   @@index([filterType])
   @@map("saved_filters")
 }
+// ============================================================================
+// LAYER 11: AI-POWERED PERSONALIZATION & INSIGHTS ENGINE
+// ============================================================================
+
+model AIResearchJob {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Target
+  contactId       String?
+  contact         Contact? @relation(fields: [contactId], references: [id])
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  
+  // Job Details
+  jobType         String   // account_research, message_generation, buying_signals
+  status          String   @default("pending") // pending, running, completed, failed
+  
+  // Research Parameters
+  researchScope   Json     @default("{}")
+  // {
+  //   news: true,
+  //   techStack: true,
+  //   competitors: true,
+  //   funding: true,
+  //   hiring: true,
+  //   intent: true
+  // }
+  
+  // Results
+  results         Json?    // Research findings
+  insights        Json?    // Generated insights
+  
+  // Processing
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([status])
+  @@map("ai_research_jobs")
+}
+
+model AccountIntelligence {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Target
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Research Data
+  recentNews      Json?    // Array of news items
+  techStack       Json?    // Detected technologies
+  competitors     String[] @default([])
+  
+  // Buying Signals
+  fundingNews     Json?    // Recent funding announcements
+  hiringActivity  Json?    // Job postings data
+  growthSignals   Json?    // Expansion indicators
+  
+  // Intent Signals
+  intentScore     Int      @default(0)
+  buyingStage     String?  // awareness, consideration, decision
+  
+  // Research Metadata
+  lastResearchedAt DateTime @default(now())
+  researchSource  String[] @default([]) // newsapi, linkedin, crunchbase, etc
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, companyId])
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([intentScore])
+  @@map("account_intelligence")
+}
+
+model PersonalizedContent {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Target
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Content
+  channel         String   // email, linkedin, sms, phone_script
+  contentType     String   // intro, follow_up, value_prop, case_study
+  
+  // Generated Content
+  subject         String?
+  body            String   @db.Text
+  
+  // Personalization Elements
+  personalizationPoints Json @default("[]")
+  // ["referenced_recent_funding", "mentioned_tech_stack", "used_mutual_connection"]
+  
+  // Research Used
+  researchUsed    Json?    // What data informed this content
+  
+  // Performance
+  usedCount       Int      @default(0)
+  openRate        Float?
+  replyRate       Float?
+  
+  // Status
+  status          String   @default("active") // active, archived, underperforming
+  
+  // AI Metadata
+  aiModel         String   @default("gpt-4")
+  promptTokens    Int?
+  completionTokens Int?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([channel])
+  @@index([contentType])
+  @@map("personalized_content")
+}
+
+model BuyingGroup {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Company
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Group Details
+  name            String?  // "Q3 Data Platform Evaluation Team"
+  
+  // Members
+  members         Json     // Array of contact IDs with roles
+  // [
+  //   { contactId: "...", role: "decision_maker", influence: 100 },
+  //   { contactId: "...", role: "champion", influence: 80 },
+  //   { contactId: "...", role: "influencer", influence: 60 }
+  // ]
+  
+  // Group Analysis
+  groupSize       Int      @default(0)
+  decisionMakers  Int      @default(0)
+  champions       Int      @default(0)
+  blockers        Int      @default(0)
+  
+  // Engagement
+  engagementScore Int      @default(0)
+  lastActivityAt  DateTime?
+  
+  // Recommendations
+  recommendations Json?    // AI-generated recommendations
+  // {
+  //   missingRoles: ["economic_buyer", "technical_evaluator"],
+  //   suggestedContacts: [...],
+  //   engagementStrategy: "..."
+  // }
+  
+  // Opportunity
+  opportunityValue Float?
+  confidence      Float    @default(0) // 0-100
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([engagementScore])
+  @@map("buying_groups")
+}
+
+model AnomalyAlert {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Target
+  contactId       String?
+  contact         Contact? @relation(fields: [contactId], references: [id])
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  
+  // Anomaly Details
+  anomalyType     String   // funding_news, hiring_spree, tech_change, engagement_drop, competitor_mention
+  severity        String   @default("medium") // low, medium, high, critical
+  
+  // Description
+  title           String
+  description     String   @db.Text
+  
+  // Data
+  detectedData    Json     // What triggered the alert
+  // {
+  //   fundingAmount: 50000000,
+  //   fundingRound: "Series C",
+  //   announcedDate: "...",
+  //   source: "TechCrunch"
+  // }
+  
+  // Recommendation
+  recommendedAction String? @db.Text
+  suggestedMessage  String? @db.Text
+  
+  // Status
+  status          String   @default("new") // new, acknowledged, acted_upon, dismissed
+  acknowledgedById String?
+  actedUponAt     DateTime?
+  
+  // Auto-Generated
+  isAutoGenerated Boolean  @default(true)
+  
+  detectedAt      DateTime @default(now())
+  expiresAt       DateTime? // Some alerts expire
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([anomalyType])
+  @@index([severity])
+  @@index([status])
+  @@index([detectedAt])
+  @@map("anomaly_alerts")
+}
+
+model AIChatSession {
+  id              String   @id @default(cuid())
+  organizationId  String
+  userId          String
+  
+  // Session Info
+  title           String?
+  context         Json?    // Active contact, company, filters
+  
+  // Messages
+  messages        Json     @default("[]")
+  // [
+  //   { role: "user", content: "...", timestamp: "..." },
+  //   { role: "assistant", content: "...", timestamp: "...", actions: [...] }
+  // ]
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("ai_chat_sessions")
+}
+
+model HyperPersonalizationCache {
+  id              String   @id @default(cuid())
+  organizationId  String
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Cached Data
+  researchSummary String   @db.Text
+  talkingPoints   Json     @default("[]")
+  contentIdeas    Json     @default("[]")
+  
+  // Data Sources
+  sourcesUsed     Json     @default("[]")
+  
+  // Cache Metadata
+  cachedAt        DateTime @default(now())
+  expiresAt       DateTime // Cache expiry
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, contactId])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([expiresAt])
+  @@map("hyper_personalization_cache")
+}
+
+model AIInsightRule {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Rule Definition
+  name            String
+  description     String?
+  
+  // Trigger
+  triggerType     String   // data_change, schedule, event
+  triggerCondition Json    // { field: "funding_amount", operator: "gt", value: 1000000 }
+  
+  // Action
+  actionType      String   // alert, content_generate, research_trigger
+  actionConfig    Json     // { messageTemplate: "...", priority: "high" }
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("ai_insight_rules")
+}
