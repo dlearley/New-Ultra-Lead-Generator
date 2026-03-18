@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UltraLead SDK Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    .demo-section {
+      margin: 40px 0;
+      padding: 30px;
+      background: #f9fafb;
+      border-radius: 12px;
+    }
+    h1 { color: #111827; }
+    h2 { color: #374151; margin-top: 0; }
+    input, button {
+      padding: 12px 16px;
+      margin: 8px 0;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input { width: 250px; }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover { background: #2563eb; }
+    .code {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 UltraLead SDK Demo</h1>
+  <p>This page demonstrates the UltraLead JavaScript SDK for intelligent lead capture.</p>
+
+  <!-- Demo 1: Basic Form -->
+  <div class="demo-section">
+    <h2>Demo 1: Newsletter Signup Form</h2>
+    <p>This form automatically captures leads using the <code>data-ul-form</code> attribute.</p>
+    
+    <form data-ul-form="demo-newsletter-form" data-ul-success="message" data-ul-message="Thanks for subscribing!">
+      <input type="email" name="email" placeholder="Enter your email" required><br>
+      <input type="text" name="firstName" placeholder="First name"><br>
+      <button type="submit">Subscribe to Newsletter</button>
+    </form>
+  </div>
+
+  <!-- Demo 2: Popup Button -->
+  <div class="demo-section">
+    <h2>Demo 2: Popup Form</h2>
+    <p>Click the button to trigger a popup lead capture form.</p>
+    
+    <button onclick="showDemoPopup()">Show Popup Form</button>
+  </div>
+
+  <!-- Demo 3: Code Examples -->
+  <div class="demo-section">
+    <h2>Demo 3: Implementation Code</h2>
+    
+    <h3>Basic Setup</h3>
+    <pre class="code">&lt;script src="ultralead.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  UltraLead.init({
+    apiKey: 'YOUR_API_KEY',
+    organizationId: 'YOUR_ORG_ID',
+  });
+&lt;/script&gt;</pre>
+
+    <h3>Custom Form Submission</h3>
+    <pre class="code">UltraLead.submitForm('form-id', {
+  email: 'john@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+});</pre>
+
+    <h3>Visitor Identification</h3>
+    <pre class="code">UltraLead.identify('john@example.com', {
+  firstName: 'John',
+  company: 'Acme Inc',
+});</pre>
+  </div>
+
+  <!-- UltraLead SDK -->
+  <script src="ultralead.js"></script>
+  
+  <script>
+    // Initialize UltraLead
+    UltraLead.init({
+      apiKey: 'demo-api-key',
+      organizationId: 'demo-org-id',
+      debug: true,
+    });
+
+    // Demo popup function
+    function showDemoPopup() {
+      UltraLead.showPopup('demo-popup-form', {
+        title: 'Get Our Free Guide',
+        description: 'Subscribe to receive our comprehensive lead generation guide.',
+        fields: [
+          { name: 'email', type: 'email', placeholder: 'Your email', required: true },
+          { name: 'name', type: 'text', placeholder: 'Your name' },
+        ],
+        submitText: 'Send Me The Guide',
+        thankYouMessage: 'Check your email for the download link!',
+      });
+    }
+
+    // Demo: Exit intent
+    let exitShown = false;
+    document.addEventListener('mouseout', function(e) {
+      if (e.clientY < 10 && !exitShown) {
+        exitShown = true;
+        UltraLead.showPopup('demo-exit-form', {
+          title: 'Wait! Before you go...',
+          description: 'Get 10% off your first purchase.',
+        });
+      }
+    });
+  </script>
+</body>
+</html>
