@@ -2131,3 +2131,512 @@ model IntegrationActivity {
   @@index([createdAt])
   @@map("integration_activities")
 }
+// ============================================================================
+// LAYER 9: AUTOMATED MULTI-CHANNEL OUTREACH & NURTURING
+// ============================================================================
+
+model OutreachSequence {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  name            String
+  description     String?
+  
+  // Sequence Type
+  sequenceType    String   @default("email") // email, linkedin, mixed, sms, whatsapp
+  status          String   @default("draft") // draft, active, paused, archived
+  
+  // Targeting
+  targetCriteria  Json?    // { tags: [], leadScoreMin: 50, industries: [], etc }
+  
+  // Schedule Settings
+  scheduleSettings Json    @default("{}")
+  // {
+  //   timezone: "America/New_York",
+  //   businessHours: { start: "09:00", end: "17:00" },
+  //   daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+  //   skipHolidays: true,
+  //   optimalSendTime: true
+  // }
+  
+  // Performance
+  totalEnrolled   Int      @default(0)
+  totalCompleted  Int      @default(0)
+  totalConverted  Int      @default(0)
+  conversionRate  Float    @default(0)
+  
+  // A/B Testing
+  isABTest        Boolean  @default(false)
+  abTestConfig    Json?    // { variantA: { steps: [] }, variantB: { steps: [] } }
+  
+  // Exit Conditions
+  exitConditions  Json?    // [{ type: "replied", action: "exit" }, { type: "booked_meeting", action: "exit" }]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  steps           OutreachStep[]
+  enrollments     SequenceEnrollment[]
+  
+  @@index([organizationId])
+  @@index([status])
+  @@map("outreach_sequences")
+}
+
+model OutreachStep {
+  id              String   @id @default(cuid())
+  sequenceId      String
+  sequence        OutreachSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  
+  // Step Info
+  name            String
+  stepNumber      Int
+  
+  // Channel
+  channel         String   @default("email") // email, linkedin, phone, sms, whatsapp, task
+  
+  // Content
+  templateId      String?
+  template        MessageTemplate? @relation(fields: [templateId], references: [id])
+  
+  // Custom content (if no template)
+  subject         String?
+  body            String?  @db.Text
+  
+  // AI Generation
+  useAI           Boolean  @default(false)
+  aiPrompt        String?  @db.Text
+  
+  // Timing
+  delayDays       Int      @default(1)
+  delayHours      Int      @default(0)
+  sendTime        String?  // "09:00" format
+  
+  // Conditions
+  condition       Json?    // { type: "opened_previous", negate: false }
+  
+  // A/B Testing
+  variant         String?  // "A" or "B"
+  
+  // Performance
+  sentCount       Int      @default(0)
+  openedCount     Int      @default(0)
+  repliedCount    Int      @default(0)
+  clickedCount    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sequenceId])
+  @@index([stepNumber])
+  @@map("outreach_steps")
+}
+
+model MessageTemplate {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Template Info
+  name            String
+  description     String?
+  
+  // Channel
+  channel         String   @default("email") // email, linkedin, sms, whatsapp
+  
+  // Content
+  subject         String?
+  body            String   @db.Text
+  
+  // Personalization variables
+  variables       String[] @default([]) // ["firstName", "company", "jobTitle", etc]
+  
+  // AI Generated
+  isAIGenerated   Boolean  @default(false)
+  aiPrompt        String?  @db.Text
+  
+  // Category
+  category        String   @default("general") // intro, follow_up, breakup, meeting_request
+  
+  // Usage Stats
+  useCount        Int      @default(0)
+  avgOpenRate     Float?
+  avgReplyRate    Float?
+  
+  // Approval
+  status          String   @default("active") // draft, active, archived
+  approvedById    String?
+  approvedAt      DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  steps           OutreachStep[]
+
+  @@index([organizationId])
+  @@index([channel])
+  @@index([category])
+  @@map("message_templates")
+}
+
+model SequenceEnrollment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Enrollment
+  sequenceId      String
+  sequence        OutreachSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Assignment
+  assignedToId    String?  // Sales rep
+  
+  // A/B Test Variant
+  abVariant       String?  // "A" or "B"
+  
+  // Status
+  status          String   @default("active") // active, paused, completed, exited
+  
+  // Current Position
+  currentStepId   String?
+  currentStepNumber Int    @default(0)
+  
+  // Timing
+  enrolledAt      DateTime @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastStepAt      DateTime?
+  nextStepAt      DateTime?
+  
+  // Exit Reason
+  exitReason      String?  // replied, booked_meeting, opted_out, bounced
+  
+  // Performance
+  totalOpens      Int      @default(0)
+  totalClicks     Int      @default(0)
+  totalReplies    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  stepExecutions  StepExecution[]
+  replies         OutreachReply[]
+
+  @@unique([sequenceId, contactId])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([status])
+  @@index([nextStepAt])
+  @@map("sequence_enrollments")
+}
+
+model StepExecution {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // References
+  enrollmentId    String
+  enrollment      SequenceEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  stepId          String
+  
+  // Execution
+  status          String   @default("scheduled") // scheduled, sending, sent, failed, bounced
+  
+  // Content (final after personalization)
+  subject         String?
+  body            String?  @db.Text
+  
+  // Timing
+  scheduledAt     DateTime
+  sentAt          DateTime?
+  
+  // Delivery
+  messageId       String?  // Provider message ID
+  
+  // Tracking
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  repliedAt       DateTime?
+  bouncedAt       DateTime?
+  
+  // Metadata
+  openCount       Int      @default(0)
+  clickCount      Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([enrollmentId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("step_executions")
+}
+
+model OutreachReply {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // References
+  enrollmentId    String
+  enrollment      SequenceEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  // Reply Info
+  subject         String?
+  body            String   @db.Text
+  
+  // Sentiment Analysis
+  sentiment       String?  @default("neutral") // positive, negative, neutral
+  sentimentScore  Float?   // -1 to 1
+  
+  // AI Analysis
+  aiSummary       String?  // Auto-generated summary
+  aiResponse      String?  // Suggested AI response
+  
+  // Intent
+  intent          String?  // meeting_request, question, objection, unsubscribe
+  
+  // Status
+  status          String   @default("unread") // unread, read, responded
+  
+  // Assignment
+  assignedToId    String?
+  
+  receivedAt      DateTime @default(now())
+  readAt          DateTime?
+  respondedAt     DateTime?
+
+  @@index([organizationId])
+  @@index([enrollmentId])
+  @@index([status])
+  @@index([receivedAt])
+  @@map("outreach_replies")
+}
+
+model EmailProvider {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Provider Info
+  name            String
+  provider        String   @default("smtp") // smtp, sendgrid, mailgun, aws_ses, gmail, outlook
+  
+  // Credentials
+  credentials     Json     // { host, port, username, password, apiKey, etc }
+  
+  // Settings
+  settings        Json     @default("{}")
+  // {
+  //   dailyLimit: 500,
+  //   rateLimit: 100, // per hour
+  //   trackOpens: true,
+  //   trackClicks: true
+  // }
+  
+  // Status
+  status          String   @default("active") // active, paused, error
+  
+  // Stats
+  totalSent       Int      @default(0)
+  totalDelivered  Int      @default(0)
+  totalBounced    Int      @default(0)
+  
+  isDefault       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("email_providers")
+}
+
+model CallCampaign {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  
+  // Targeting
+  targetCriteria  Json?
+  
+  // Dialer Settings
+  dialerMode      String   @default("manual") // manual, power, predictive, preview
+  
+  // Local Presence
+  useLocalPresence Boolean @default(false)
+  localAreaCodes  String[] @default([])
+  
+  // Script
+  scriptTemplate  String?  @db.Text
+  
+  // Status
+  status          String   @default("draft") // draft, active, paused, completed
+  
+  // Stats
+  totalCalls      Int      @default(0)
+  completedCalls  Int      @default(0)
+  appointments    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  calls           CallRecord[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("call_campaigns")
+}
+
+model CallRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  campaignId      String?
+  campaign        CallCampaign? @relation(fields: [campaignId], references: [id])
+  
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  assignedToId    String?  // Sales rep who made the call
+  
+  // Call Info
+  phoneNumber     String
+  fromNumber      String?
+  
+  // Status
+  status          String   @default("pending") // pending, ringing, connected, completed, failed, no_answer, voicemail
+  
+  // Timing
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  duration        Int?     // seconds
+  
+  // Recording
+  recordingUrl    String?
+  recordingDuration Int?
+  
+  // Notes
+  notes           String?  @db.Text
+  outcome         String?  // appointment_set, follow_up, not_interested, wrong_number, callback
+  
+  // Disposition
+  disposition     String?  // Qualified, Not Qualified, Callback, etc
+  
+  // Voicemail
+  voicemailLeft   Boolean  @default(false)
+  voicemailUrl    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("call_records")
+}
+
+model SMSTemplate {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  body            String   @db.Text
+  
+  // Personalization
+  variables       String[] @default([])
+  
+  // Category
+  category        String   @default("general") // reminder, follow_up, meeting
+  
+  // Stats
+  useCount        Int      @default(0)
+  
+  status          String   @default("active")
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("sms_templates")
+}
+
+model ScheduledMessage {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  // Target
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Content
+  channel         String   @default("email") // email, sms, linkedin, whatsapp
+  subject         String?
+  body            String   @db.Text
+  
+  // Scheduling
+  scheduledAt     DateTime
+  timezone        String   @default("UTC")
+  
+  // Optimal Send Time
+  useOptimalTime  Boolean  @default(false)
+  optimalTimeWindow Json?  // { start: "09:00", end: "17:00" }
+  
+  // Status
+  status          String   @default("scheduled") // scheduled, sent, cancelled, failed
+  
+  // AI
+  isAIGenerated   Boolean  @default(false)
+  
+  sentAt          DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("scheduled_messages")
+}
+
+model SendTimeOptimization {
+  id              String   @id @default(cuid())
+  organizationId  String
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Optimal times by channel
+  emailBestTime   String?  // "09:30" format
+  emailBestDay    String?  // "tuesday"
+  linkedinBestTime String?
+  phoneBestTime   String?
+  
+  // Engagement patterns
+  openPatterns    Json?    // { "09:00": 0.8, "14:00": 0.3, ... }
+  clickPatterns   Json?
+  replyPatterns   Json?
+  
+  // AI Recommendations
+  aiRecommendations Json?  // { suggestedSubjectLines: [], bestSendTimes: [] }
+  
+  lastCalculatedAt DateTime @default(now())
+  
+  @@unique([organizationId, contactId])
+  @@index([organizationId])
+  @@map("send_time_optimization")
+}

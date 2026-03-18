@@ -12,6 +12,7 @@ import { BulkImportModule } from './bulk-import/bulk-import.module';
 import { CaptureModule } from './capture/capture.module';
 import { ScoringModule } from './scoring/scoring.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { OutreachModule } from './outreach/outreach.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -29,6 +30,7 @@ import { PrismaService } from './services/prisma.service';
     CaptureModule,
     ScoringModule,
     IntegrationsModule,
+    OutreachModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
