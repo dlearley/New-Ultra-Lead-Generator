@@ -13,6 +13,7 @@ import { CaptureModule } from './capture/capture.module';
 import { ScoringModule } from './scoring/scoring.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { OutreachModule } from './outreach/outreach.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -31,6 +32,7 @@ import { PrismaService } from './services/prisma.service';
     ScoringModule,
     IntegrationsModule,
     OutreachModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
