@@ -16,6 +16,7 @@ import { OutreachModule } from './outreach/outreach.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AIEngineModule } from './ai-engine/ai-engine.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
+import { ComplianceModule } from './compliance/compliance.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -37,6 +38,7 @@ import { PrismaService } from './services/prisma.service';
     AnalyticsModule,
     AIEngineModule,
     OnboardingModule,
+    ComplianceModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
