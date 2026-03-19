@@ -29,6 +29,10 @@ model Organization {
   plan        String   @default("free") // free, starter, professional, enterprise
   planExpiresAt DateTime?
   
+  // Rate limiting
+  subscriptionTier String @default("free") // free, pro, enterprise
+  customRateLimit  Json?  // Custom rate limit config for enterprise
+  
   // Usage tracking
   apiCallsThisMonth Int @default(0)
   contactsLimit     Int @default(1000)
@@ -3762,4 +3766,82 @@ model SecurityEvent {
   @@index([status])
   @@index([createdAt])
   @@map("security_events")
+}
+
+// ============================================================
+// RATE LIMITING MODELS
+// ============================================================
+
+model RateLimitUsage {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  organizationId String
+  endpoint       String
+  window         String
+  count          Int      @default(0)
+  resetAt        DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, window, resetAt])
+  @@index([key])
+  @@map("rate_limit_usage")
+}
+
+model ConcurrentRequest {
+  id             String   @id @default(cuid())
+  organizationId String
+  startedAt      DateTime @default(now())
+
+  @@index([organizationId, startedAt])
+  @@map("concurrent_requests")
+}
+
+// ============================================================
+// WEBHOOK MODELS
+// ============================================================
+
+model Webhook {
+  id             String   @id @default(cuid())
+  organizationId String
+  url            String
+  events         String[]
+  secret         String
+  description    String?
+  active         Boolean  @default(true)
+  lastTriggeredAt DateTime?
+  lastSuccessAt  DateTime?
+  lastFailureAt  DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  deliveries     WebhookDelivery[]
+
+  @@index([organizationId, active])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id             String   @id @default(cuid())
+  webhookId      String
+  organizationId String
+  event          String
+  payload        Json
+  status         String   @default("pending") // pending, delivered, failed, retrying
+  httpStatusCode Int?
+  responseBody   String?
+  retryCount     Int      @default(0)
+  lastError      String?
+  nextRetryAt    DateTime?
+  deliveredAt    DateTime?
+  responseTimeMs Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  webhook        Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, status])
+  @@index([organizationId, createdAt])
+  @@index([status, nextRetryAt])
+  @@map("webhook_deliveries")
 }

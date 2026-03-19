@@ -17,6 +17,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AIEngineModule } from './ai-engine/ai-engine.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { ComplianceModule } from './compliance/compliance.module';
+import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -39,6 +41,8 @@ import { PrismaService } from './services/prisma.service';
     AIEngineModule,
     OnboardingModule,
     ComplianceModule,
+    RateLimitingModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
