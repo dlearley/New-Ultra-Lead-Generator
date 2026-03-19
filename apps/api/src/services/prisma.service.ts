@@ -24,6 +24,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   leadScore: any;
   zapierConnection: any;
   jobLog: any;
+  securitySettings: any;
+  ipWhitelist: any;
+  failedLoginAttempt: any;
+  accountLockout: any;
 
   async onModuleInit() {
     await this.$connect();

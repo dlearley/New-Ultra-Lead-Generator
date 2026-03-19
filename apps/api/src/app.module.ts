@@ -27,6 +27,7 @@ import { AnalyticsDashboardModule } from './analytics-dashboard/analytics-dashbo
 import { ZapierModule } from './zapier/zapier.module';
 import { QueueModule } from './queue/queue.module';
 import { PredictiveModule } from './predictive/predictive.module';
+import { SecurityModule } from './security/security.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -59,6 +60,7 @@ import { PrismaService } from './services/prisma.service';
     ZapierModule,
     QueueModule,
     PredictiveModule,
+    SecurityModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

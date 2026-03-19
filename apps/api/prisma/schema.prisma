@@ -4102,3 +4102,60 @@ model JobLog {
   @@index([organizationId, createdAt])
   @@map("job_logs")
 }
+
+// ============================================================
+// SECURITY MODELS
+// ============================================================
+
+model SecuritySettings {
+  id                      String   @id @default(cuid())
+  organizationId          String   @unique
+  ipWhitelistEnabled      Boolean  @default(false)
+  sessionTimeoutMinutes   Int      @default(480)
+  mfaRequired             Boolean  @default(false)
+  passwordPolicy          String   @default("strong") // basic, strong, enterprise
+  requirePasswordChangeDays Int    @default(90)
+  maxFailedLogins         Int      @default(5)
+  lockoutDurationMinutes  Int      @default(30)
+  auditLogRetentionDays   Int      @default(365)
+  enforceHttps            Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("security_settings")
+
+model IpWhitelist {
+  id             String    @id @default(cuid())
+  organizationId String
+  ipPattern      String
+  description    String?
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId, isActive])
+  @@map("ip_whitelist")
+
+model FailedLoginAttempt {
+  id          String   @id @default(cuid())
+  organizationId String
+  email       String
+  ipAddress   String
+  attemptedAt DateTime @default(now())
+
+  @@index([organizationId, email, attemptedAt])
+  @@map("failed_login_attempts")
+
+model AccountLockout {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  lockedUntil    DateTime
+  failedAttempts Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, email])
+  @@index([lockedUntil])
+  @@map("account_lockouts")
