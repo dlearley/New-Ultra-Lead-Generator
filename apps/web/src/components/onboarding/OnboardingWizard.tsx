@@ -42,9 +42,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSelection = (category: string, value: string) => {
-    const categoryArray = icp[category as keyof typeof icp] || [];
+    const categoryArray = icp[category as keyof typeof icp] as string[] || [];
     const newArray = categoryArray.includes(value)
-      ? categoryArray.filter((item) => item !== value)
+      ? categoryArray.filter((item: string) => item !== value)
       : [...categoryArray, value];
 
     setIcp({
@@ -104,17 +104,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       </div>
 
       <div className="wizard-content">
-        <h2>{step.title}</h2>
-        <p>Select one or more {step.title.toLowerCase()} for your organization</p>
+        <h2>{step?.title}</h2>
+        <p>Select one or more {step?.title.toLowerCase()} for your organization</p>
 
         <div className="options">
-          {step.options.map((option) => (
+          {step?.options.map((option: string) => (
             <label key={option} className="option">
               <input
                 type="checkbox"
-                checked={icp[step.category as keyof typeof icp]?.includes(option) || false}
+                checked={icp[step?.category as keyof typeof icp]?.includes(option) || false}
                 onChange={() =>
-                  handleSelection(step.category, option)
+                  handleSelection(step?.category || '', option)
                 }
               />
               <span>{option}</span>

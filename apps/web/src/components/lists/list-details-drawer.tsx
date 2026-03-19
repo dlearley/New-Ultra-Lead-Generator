@@ -76,7 +76,7 @@ export function ListDetailsDrawer({ list, isOpen, onClose }: ListDetailsDrawerPr
           id: `prospect-${i}`,
           name: `Company ${i + 1}`,
           description: `Sample company description ${i + 1}`,
-          industry: ["Technology", "Healthcare", "Finance", "Manufacturing"][i % 4],
+          industry: ["Technology", "Healthcare", "Finance", "Manufacturing"][i % 4] || "Technology",
           naics: "511210",
           sic: "7374",
           ownership: "Private" as const,
@@ -328,7 +328,7 @@ export function ListDetailsDrawer({ list, isOpen, onClose }: ListDetailsDrawerPr
                         <TableCell>
                           <Checkbox
                             checked={selectedEntries.includes(entry.id)}
-                            onCheckedChange={(checked) => handleSelectEntry(entry.id, checked as boolean)}
+                            onCheckedChange={(checked: boolean) => handleSelectEntry(entry.id, checked)}
                           />
                         </TableCell>
                         <TableCell>
