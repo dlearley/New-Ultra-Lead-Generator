@@ -21,6 +21,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   contactActivity: any;
   deal: any;
   sequence: any;
+  leadScore: any;
+  zapierConnection: any;
 
   async onModuleInit() {
     await this.$connect();

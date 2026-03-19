@@ -4057,3 +4057,24 @@ model CustomFieldValue {
   @@index([fieldId])
   @@map("custom_field_values")
 }
+
+// ============================================================
+// ZAPIER INTEGRATION MODEL
+// ============================================================
+
+model ZapierConnection {
+  id             String   @id @default(cuid())
+  organizationId String
+  apiKey         String   @unique
+  zapId          String
+  triggerId      String?
+  actionId       String?
+  webhookUrl     String
+  isActive       Boolean  @default(true)
+  lastTriggeredAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, isActive])
+  @@map("zapier_connections")
+}
