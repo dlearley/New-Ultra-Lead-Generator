@@ -81,6 +81,7 @@ export const TECH_STACK_TAGS = [
 
 export const CITY_LIBRARY = [
   {
+    value: "san-francisco-ca",
     label: "San Francisco, CA",
     city: "San Francisco",
     state: "CA",
@@ -89,6 +90,7 @@ export const CITY_LIBRARY = [
     lng: -122.4194,
   },
   {
+    value: "austin-tx",
     label: "Austin, TX",
     city: "Austin",
     state: "TX",
@@ -97,6 +99,7 @@ export const CITY_LIBRARY = [
     lng: -97.7431,
   },
   {
+    value: "new-york-ny",
     label: "New York, NY",
     city: "New York",
     state: "NY",
@@ -105,6 +108,7 @@ export const CITY_LIBRARY = [
     lng: -74.006,
   },
   {
+    value: "boston-ma",
     label: "Boston, MA",
     city: "Boston",
     state: "MA",
@@ -113,6 +117,7 @@ export const CITY_LIBRARY = [
     lng: -71.0589,
   },
   {
+    value: "chicago-il",
     label: "Chicago, IL",
     city: "Chicago",
     state: "IL",
@@ -121,6 +126,7 @@ export const CITY_LIBRARY = [
     lng: -87.6298,
   },
   {
+    value: "seattle-wa",
     label: "Seattle, WA",
     city: "Seattle",
     state: "WA",
@@ -129,6 +135,7 @@ export const CITY_LIBRARY = [
     lng: -122.3321,
   },
   {
+    value: "denver-co",
     label: "Denver, CO",
     city: "Denver",
     state: "CO",
@@ -137,6 +144,7 @@ export const CITY_LIBRARY = [
     lng: -104.9903,
   },
   {
+    value: "atlanta-ga",
     label: "Atlanta, GA",
     city: "Atlanta",
     state: "GA",
@@ -147,19 +155,19 @@ export const CITY_LIBRARY = [
 ];
 
 export const REVENUE_BANDS = [
-  { label: "$0 - $10M", range: [0, 10_000_000] },
-  { label: "$10M - $50M", range: [10_000_000, 50_000_000] },
-  { label: "$50M - $100M", range: [50_000_000, 100_000_000] },
-  { label: "$100M - $500M", range: [100_000_000, 500_000_000] },
-  { label: "$500M+", range: [500_000_000, 2_000_000_000] },
+  { value: "0-10M", label: "$0 - $10M", range: [0, 10_000_000] },
+  { value: "10M-50M", label: "$10M - $50M", range: [10_000_000, 50_000_000] },
+  { value: "50M-100M", label: "$50M - $100M", range: [50_000_000, 100_000_000] },
+  { value: "100M-500M", label: "$100M - $500M", range: [100_000_000, 500_000_000] },
+  { value: "500M+", label: "$500M+", range: [500_000_000, 2_000_000_000] },
 ];
 
 export const EMPLOYEE_BANDS = [
-  { label: "1-50", range: [1, 50] },
-  { label: "51-200", range: [51, 200] },
-  { label: "201-500", range: [201, 500] },
-  { label: "501-1k", range: [501, 1000] },
-  { label: "1k+", range: [1000, 10000] },
+  { value: "1-50", label: "1-50", range: [1, 50] },
+  { value: "51-200", label: "51-200", range: [51, 200] },
+  { value: "201-500", label: "201-500", range: [201, 500] },
+  { value: "501-1k", label: "501-1k", range: [501, 1000] },
+  { value: "1k+", label: "1k+", range: [1000, 10000] },
 ];
 
 export const DEFAULT_PAGE_SIZE = 8;

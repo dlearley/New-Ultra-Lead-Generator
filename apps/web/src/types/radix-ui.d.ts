@@ -37,6 +37,8 @@ declare module '@radix-ui/react-switch' {
     name?: string;
     value?: string;
     children?: React.ReactNode;
+    className?: string;
+    variant?: string;
   }
   export const Root: React.ForwardRefExoticComponent<SwitchProps & React.RefAttributes<HTMLButtonElement>>;
   export const Thumb: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLSpanElement> & React.RefAttributes<HTMLSpanElement>>;
@@ -65,6 +67,7 @@ declare module '@radix-ui/react-slider' {
     disabled?: boolean;
     orientation?: 'horizontal' | 'vertical';
     children?: React.ReactNode;
+    className?: string;
   }
   
   export const Root: React.ForwardRefExoticComponent<SliderProps & React.RefAttributes<HTMLDivElement>>;

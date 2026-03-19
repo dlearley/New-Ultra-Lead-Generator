@@ -52,6 +52,9 @@ export interface ProspectFilters {
   radiusMiles: number;
   revenueRange: [number, number] | null;
   employeesRange: [number, number] | null;
+  revenueBands: string[];
+  employeeBands: string[];
+  aiScoreRange: [number, number];
   minimumReviewRating: number;
   minimumReviewCount: number;
   reviewPlatforms: string[];
@@ -60,6 +63,7 @@ export interface ProspectFilters {
   hasWebsite: boolean | null;
   hasGenericEmail: boolean | null;
   techStacks: string[];
+  verifiedOnly: boolean;
 }
 
 export type SortField = "aiLeadScore" | "name" | "revenue" | "employees";

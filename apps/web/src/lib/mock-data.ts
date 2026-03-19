@@ -19,6 +19,9 @@ const baseFilters: ProspectFilters = {
   radiusMiles: 150,
   revenueRange: null,
   employeesRange: null,
+  revenueBands: [],
+  employeeBands: [],
+  aiScoreRange: [0, 100],
   minimumReviewRating: 0,
   minimumReviewCount: 0,
   reviewPlatforms: [],
@@ -27,6 +30,7 @@ const baseFilters: ProspectFilters = {
   hasWebsite: null,
   hasGenericEmail: null,
   techStacks: [],
+  verifiedOnly: false,
 };
 
 export const DEFAULT_FILTERS: ProspectFilters = Object.freeze(baseFilters);
