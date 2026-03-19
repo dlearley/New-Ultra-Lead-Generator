@@ -52,7 +52,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             <Link
               key={item.name}
               href={item.href}
-              onClick={onClose}
+              {...(onClose ? { onClick: onClose } : {})}
               className={`
                 group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
                 ${isActive
