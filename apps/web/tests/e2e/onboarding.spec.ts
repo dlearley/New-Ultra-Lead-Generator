@@ -37,7 +37,7 @@ test.describe('Onboarding Wizard', () => {
 
     for (let i = 0; i < stepTitles.length - 1; i++) {
       // Verify current step
-      await expect(page.locator('h2')).toContainText(stepTitles[i]);
+      await expect(page.locator('h2')).toContainText(stepTitles[i] || '');
 
       // Select first option
       const firstCheckbox = page.locator('input[type="checkbox"]').first();
@@ -48,7 +48,7 @@ test.describe('Onboarding Wizard', () => {
     }
 
     // Verify last step
-    await expect(page.locator('h2')).toContainText(stepTitles[3]);
+    await expect(page.locator('h2')).toContainText(stepTitles[3] || '');
   });
 
   test('should complete onboarding', async ({ page }) => {
@@ -81,7 +81,7 @@ test.describe('Onboarding Wizard', () => {
     await expect(page.locator('.progress-text')).toContainText('Step 1 of 4');
 
     // Go to next step
-    await page.click('input[type="checkbox"]').first();
+    await page.locator('input[type="checkbox"]').first().click();
     await page.click('button:has-text("Next")');
 
     // Verify progress updated
@@ -95,7 +95,7 @@ test.describe('Onboarding Wizard', () => {
 
   test('should enable previous button after first step', async ({ page }) => {
     // Go to next step
-    await page.click('input[type="checkbox"]').first();
+    await page.locator('input[type="checkbox"]').first().click();
     await page.click('button:has-text("Next")');
 
     // Previous button should be enabled

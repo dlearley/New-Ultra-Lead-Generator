@@ -116,7 +116,11 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!
         session.user.mfaEnabled = token.mfaEnabled as boolean
         session.accessToken = token.accessToken as string
-        session.error = (token.error || undefined) as string | undefined
+        if (token.error) {
+          session.error = token.error as string
+        } else {
+          delete (session as any).error
+        }
       }
       return session
     },

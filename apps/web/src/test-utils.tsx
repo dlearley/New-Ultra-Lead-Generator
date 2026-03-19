@@ -1,8 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import { SessionProvider } from 'next-auth/react'
+import * as React from 'react'
+
+interface MockSession {
+  user?: {
+    id?: string
+    email?: string
+    name?: string
+    mfaEnabled?: boolean
+  }
+  expires?: string
+}
 
 // Mock session for testing
-const createMockSession = (overrides = {}) => ({
+const createMockSession = (overrides: MockSession = {}) => ({
   user: {
     id: '1',
     email: 'test@example.com',
@@ -14,8 +25,13 @@ const createMockSession = (overrides = {}) => ({
   ...overrides,
 })
 
+interface TestWrapperProps {
+  children: React.ReactNode
+  session?: any
+}
+
 // Test wrapper with session provider
-const TestWrapper = ({ children, session = null }) => (
+const TestWrapper = ({ children, session = null }: TestWrapperProps) => (
   <SessionProvider session={session}>
     {children}
   </SessionProvider>
