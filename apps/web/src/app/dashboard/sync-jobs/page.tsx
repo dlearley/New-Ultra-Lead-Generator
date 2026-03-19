@@ -31,7 +31,7 @@ export default function SyncJobsPage() {
     setFilters(prev => ({
       ...prev,
       [key]: value,
-      page: key === 'page' ? value : 1, // Reset to page 1 when changing filters
+      page: key === 'page' ? parseInt(value, 10) || 1 : 1, // Reset to page 1 when changing filters
     }));
   };
 

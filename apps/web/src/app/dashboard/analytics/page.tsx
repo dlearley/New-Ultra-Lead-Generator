@@ -19,15 +19,15 @@ export default function AnalyticsPage() {
 
   // Calculate analytics
   const totalJobs = syncJobs.length;
-  const completedJobs = syncJobs.filter(job => job.status === 'COMPLETED').length;
-  const failedJobs = syncJobs.filter(job => job.status === 'FAILED').length;
-  const pendingJobs = syncJobs.filter(job => job.status === 'PENDING').length;
-  const processingJobs = syncJobs.filter(job => job.status === 'PROCESSING').length;
+  const completedJobs = syncJobs.filter((job: { status: string }) => job.status === 'COMPLETED').length;
+  const failedJobs = syncJobs.filter((job: { status: string }) => job.status === 'FAILED').length;
+  const pendingJobs = syncJobs.filter((job: { status: string }) => job.status === 'PENDING').length;
+  const processingJobs = syncJobs.filter((job: { status: string }) => job.status === 'PROCESSING').length;
 
   const successRate = totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0;
 
   // CRM type breakdown
-  const crmTypeStats = syncJobs.reduce((acc, job) => {
+  const crmTypeStats = syncJobs.reduce((acc: Record<string, number>, job: { crmType: string }) => {
     acc[job.crmType] = (acc[job.crmType] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -59,14 +59,17 @@ export default function AnalyticsPage() {
     },
   ];
 
-  const getColorClasses = (color: string) => {
+  const getColorClasses = (color: string): { bg: string; text: string } => {
     const colorMap: Record<string, { bg: string; text: string }> = {
       blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
       green: { bg: 'bg-green-100', text: 'text-green-600' },
       red: { bg: 'bg-red-100', text: 'text-red-600' },
       yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+      orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+      gray: { bg: 'bg-gray-100', text: 'text-gray-600' },
     };
-    return colorMap[color] || colorMap.blue;
+    const result = colorMap[color];
+    return result || { bg: 'bg-blue-100', text: 'text-blue-600' };
   };
 
   return (
@@ -145,8 +148,8 @@ export default function AnalyticsPage() {
           </div>
           <div className="card-body">
             <div className="space-y-4">
-              {Object.entries(crmTypeStats).map(([crmType, count]) => {
-                const percentage = totalJobs > 0 ? (count / totalJobs) * 100 : 0;
+              {(Object.entries(crmTypeStats) as [string, number][]).map(([crmType, countValue]) => {
+                const percentage = totalJobs > 0 ? (countValue / totalJobs) * 100 : 0;
                 const crmColors = {
                   SALESFORCE: 'blue',
                   HUBSPOT: 'orange',
@@ -159,7 +162,7 @@ export default function AnalyticsPage() {
                   <div key={crmType}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-medium text-gray-900">{crmType}</span>
-                      <span className="text-sm text-gray-500">{count} jobs ({percentage.toFixed(1)}%)</span>
+                      <span className="text-sm text-gray-500">{countValue} jobs ({percentage.toFixed(1)}%)</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 

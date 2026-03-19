@@ -66,8 +66,8 @@ export default function OnboardingPage() {
         return (
           <div className="text-center py-8">
             <div className="text-6xl mb-6">🚀</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">{steps[0].title}</h2>
-            <p className="text-gray-600 mb-8">{steps[0].description}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{steps[0]?.title}</h2>
+            <p className="text-gray-600 mb-8">{steps[0]?.description}</p>
             <div className="space-y-4 max-w-md mx-auto text-left">
               <div className="flex items-start space-x-3">
                 <div className="text-2xl">🔍</div>
@@ -97,7 +97,7 @@ export default function OnboardingPage() {
       case 1:
         return (
           <div className="py-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">{steps[1].title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{steps[1]?.title}</h2>
             <div className="space-y-6 max-w-md">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -151,8 +151,8 @@ export default function OnboardingPage() {
       case 2:
         return (
           <div className="py-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">{steps[2].title}</h2>
-            <p className="text-gray-600 mb-6">{steps[2].description}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{steps[2]?.title}</h2>
+            <p className="text-gray-600 mb-6">{steps[2]?.description}</p>
             
             <div className="space-y-4">
               {[
@@ -202,7 +202,7 @@ export default function OnboardingPage() {
       case 3:
         return (
           <div className="py-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">{steps[3].title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{steps[3]?.title}</h2>
             
             <div className="space-y-6">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -250,8 +250,8 @@ export default function OnboardingPage() {
         return (
           <div className="text-center py-8">
             <div className="text-6xl mb-6">🎉</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">{steps[4].title}</h2>
-            <p className="text-gray-600 mb-8">{steps[4].description}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{steps[4]?.title}</h2>
+            <p className="text-gray-600 mb-8">{steps[4]?.description}</p>
             
             <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto text-left">
               <h3 className="font-semibold mb-4">What's next?</h3>

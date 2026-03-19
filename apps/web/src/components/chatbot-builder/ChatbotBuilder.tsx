@@ -8,6 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, MessageCircle, Bot, Save } from 'lucide-react';
 
+// Type cast for React 18 compatibility
+const BotIcon = Bot as React.FC<React.SVGProps<SVGSVGElement>>;
+const SaveIcon = Save as React.FC<React.SVGProps<SVGSVGElement>>;
+const PlusIcon = Plus as React.FC<React.SVGProps<SVGSVGElement>>;
+const TrashIcon = Trash2 as React.FC<React.SVGProps<SVGSVGElement>>;
+const MessageIcon = MessageCircle as React.FC<React.SVGProps<SVGSVGElement>>;
+
 // Simple chatbot builder
 export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => void; onCancel: () => void }) {
   const [botName, setBotName] = useState('My Chatbot');
@@ -24,7 +31,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
       ],
     },
   ]);
-  const [activeFlow, setActiveFlow] = useState('welcome');
+  const [activeFlow, setActiveFlow] = useState<string | null>('welcome');
 
   const addFlow = () => {
     const newFlow = {
@@ -62,7 +69,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bot className="h-6 w-6 text-blue-600" />
+            <BotIcon className="h-6 w-6 text-blue-600" />
             <Input
               value={botName}
               onChange={(e) => setBotName(e.target.value)}
@@ -73,7 +80,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
           <div className="flex gap-2">
             <Button variant="outline" onClick={onCancel}>Cancel</Button>
             <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />Save Chatbot
+              <SaveIcon className="h-4 w-4 mr-2" />Save Chatbot
             </Button>
           </div>
         </div>
@@ -85,7 +92,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Conversation Flows</h3>
             <Button size="sm" variant="ghost" onClick={addFlow}>
-              <Plus className="h-4 w-4" />
+              <PlusIcon className="h-4 w-4" />
             </Button>
           </div>
           
@@ -107,7 +114,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
                       className="h-6 w-6 text-red-500"
                       onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <TrashIcon className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
@@ -123,7 +130,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
             <Card className="max-w-2xl mx-auto">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5" />
+                  <MessageIcon className="h-5 w-5" />
                   Edit Flow: {currentFlow.id}
                 </CardTitle>
               </CardHeader>
@@ -153,7 +160,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
                             updateFlow(currentFlow.id, { messages: newMessages });
                           }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <TrashIcon className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
@@ -165,7 +172,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
                         messages: [...currentFlow.messages, ''] 
                       })}
                     >
-                      <Plus className="h-4 w-4 mr-2" />Add Message
+                      <PlusIcon className="h-4 w-4 mr-2" />Add Message
                     </Button>
                   </div>
                 </div>
@@ -210,7 +217,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
                             updateFlow(currentFlow.id, { options: newOptions });
                           }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <TrashIcon className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
@@ -222,7 +229,7 @@ export function ChatbotBuilder({ onSave, onCancel }: { onSave: (data: any) => vo
                         options: [...(currentFlow.options || []), { label: '', nextFlow: '' }]
                       })}
                     >
-                      <Plus className="h-4 w-4 mr-2" />Add Option
+                      <PlusIcon className="h-4 w-4 mr-2" />Add Option
                     </Button>
                   </div>
                 </div>

@@ -128,9 +128,7 @@ export default function DataToolsPage() {
             tags: ["software", "enterprise"]
           }
         ],
-        status: "pending",
-        resolvedAt: undefined,
-        resolvedBy: undefined
+        status: "pending"
       },
       {
         id: "dup-2",
@@ -199,9 +197,7 @@ export default function DataToolsPage() {
             tags: ["healthcare", "startup"]
           }
         ],
-        status: "pending",
-        resolvedAt: undefined,
-        resolvedBy: undefined
+        status: "pending"
       }
     ];
 
@@ -488,7 +484,7 @@ export default function DataToolsPage() {
                 <div className="flex items-start gap-4">
                   <Checkbox
                     checked={selectedDuplicates.includes(group.id)}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(checked: boolean) => {
                       if (checked) {
                         setSelectedDuplicates(prev => [...prev, group.id]);
                       } else {

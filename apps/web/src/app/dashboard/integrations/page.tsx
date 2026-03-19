@@ -53,7 +53,7 @@ export default function IntegrationsPage() {
     testConnectionMutation.mutate(crmType);
   };
 
-  const getColorClasses = (color: string) => {
+  const getColorClasses = (color: string): { bg: string; text: string; border: string } => {
     const colorMap: Record<string, { bg: string; text: string; border: string }> = {
       blue: {
         bg: 'bg-blue-100',
@@ -70,8 +70,14 @@ export default function IntegrationsPage() {
         text: 'text-red-800',
         border: 'border-red-200'
       },
+      gray: {
+        bg: 'bg-gray-100',
+        text: 'text-gray-800',
+        border: 'border-gray-200'
+      },
     };
-    return colorMap[color] || colorMap.blue;
+    const result = colorMap[color];
+    return result || { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' };
   };
 
   return (
