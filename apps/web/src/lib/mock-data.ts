@@ -395,7 +395,7 @@ export async function parseSearchQueryToFilters(
 
   const revenueMatch = normalized.match(/\$?(\d+)\s?(k|m|b)/);
   if (revenueMatch) {
-    const value = toNumber(revenueMatch[1], revenueMatch[2]);
+    const value = toNumber(revenueMatch[1] || '0', revenueMatch[2] || '');
     if (value) {
       partial.revenueRange = [value, value * 2] as [number, number];
     }

@@ -21,7 +21,7 @@ export function QuickActions({ onSaveSearch, onAddToList }: QuickActionsProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [saveName, setSaveName] = useState("Smart Prospecting Search");
-  const [selectedList, setSelectedList] = useState(LIST_OPTIONS[0].id);
+  const [selectedList, setSelectedList] = useState(LIST_OPTIONS[0]?.id || '');
   const [message, setMessage] = useState<string | null>(null);
 
   const handleSave = async () => {

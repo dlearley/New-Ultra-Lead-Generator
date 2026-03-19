@@ -89,8 +89,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // Initial sign in
       if (user && account) {
-        token.accessToken = account.access_token
-        token.refreshToken = account.refresh_token
+        token.accessToken = account.access_token || ''
+        token.refreshToken = account.refresh_token || ''
         token.mfaEnabled = user.mfaEnabled
         
         // Session storage is handled by Prisma adapter
@@ -116,7 +116,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!
         session.user.mfaEnabled = token.mfaEnabled as boolean
         session.accessToken = token.accessToken as string
-        session.error = token.error as string | undefined
+        session.error = (token.error || undefined) as string | undefined
       }
       return session
     },
