@@ -23,6 +23,7 @@ import { DeliverabilityModule } from './deliverability/deliverability.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { SlackModule } from './slack/slack.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
+import { AnalyticsDashboardModule } from './analytics-dashboard/analytics-dashboard.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -51,6 +52,7 @@ import { PrismaService } from './services/prisma.service';
     CalendarModule,
     SlackModule,
     CustomFieldsModule,
+    AnalyticsDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
