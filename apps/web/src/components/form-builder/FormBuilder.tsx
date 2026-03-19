@@ -42,19 +42,19 @@ interface FormField {
   id: string;
   type: string;
   label: string;
-  name?: string;
-  placeholder?: string;
-  required?: boolean;
-  helpText?: string;
+  name?: string | undefined;
+  placeholder?: string | undefined;
+  required?: boolean | undefined;
+  helpText?: string | undefined;
   options?: string[] | undefined;
   validation?: {
-    min?: number;
-    max?: number;
-    pattern?: string;
+    min?: number | undefined;
+    max?: number | undefined;
+    pattern?: string | undefined;
   };
-  mapping?: string;
-  min?: number;
-  max?: number;
+  mapping?: string | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
 }
 
 interface DraggableFieldProps {
