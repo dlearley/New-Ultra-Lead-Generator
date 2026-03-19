@@ -76,6 +76,7 @@ declare module '@prisma/client' {
     account: any;
     session: any;
     verificationToken: any;
+    mfaChallenge: any;
   }
 }
 

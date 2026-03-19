@@ -54,7 +54,7 @@ interface FilterCondition {
   id: string;
   field: string;
   operator: string;
-  value: string | number | string[];
+  value: string | number | string[] | number[];
 }
 
 interface FilterGroup {
@@ -194,16 +194,12 @@ function SortableFilterItem({
           <div className="space-y-2">
             <Slider
               value={[
-                typeof condition.value === 'object'
-                  ? (condition.value as number[])[0]
-                  : 0,
-                typeof condition.value === 'object'
-                  ? (condition.value as number[])[1]
-                  : 100,
+                Number((Array.isArray(condition.value) ? condition.value[0] : 0) || 0),
+                Number((Array.isArray(condition.value) ? condition.value[1] : 100) || 100),
               ]}
               max={100}
               step={1}
-              onValueChange={(value) => onUpdate({ value })}
+              onValueChange={(value: number[]) => onUpdate({ value })}
             />
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>{Array.isArray(condition.value) ? condition.value[0] : 0}</span>
@@ -269,7 +265,7 @@ export function FilterBuilder({ onFiltersChange, className }: FilterBuilderProps
                 ...group.conditions,
                 {
                   id: `${groupId}-${Date.now()}`,
-                  field: AVAILABLE_FILTERS[0].field,
+                  field: AVAILABLE_FILTERS[0]?.field || 'name',
                   operator: 'equals',
                   value: '',
                 },

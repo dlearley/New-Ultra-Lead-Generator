@@ -180,13 +180,14 @@ export function FilterSidebar({ filters, onFiltersChange, isMobile = false }: Fi
       {CITY_LIBRARY.slice(0, 10).map((city) => (
         <label key={city.value} className="flex items-center gap-2">
           <Checkbox.Root
-            checked={filters.locations.includes(city.value)}
-            onCheckedChange={() =>
-              updateFilter(
-                "locations",
-                toggleArrayValue(filters.locations, city.value)
-              )
-            }
+            checked={filters.locations.some((loc) => loc.city === city.city)}
+            onCheckedChange={() => {
+              const exists = filters.locations.some((loc) => loc.city === city.city);
+              const newLocations = exists
+                ? filters.locations.filter((loc) => loc.city !== city.city)
+                : [...filters.locations, { city: city.city, state: city.state, country: city.country, lat: city.lat, lng: city.lng }];
+              updateFilter("locations", newLocations);
+            }}
             className="h-4 w-4 shrink-0 rounded border border-zinc-300 data-[state=checked]:bg-zinc-900 data-[state=checked]:border-zinc-900 dark:border-zinc-700 dark:data-[state=checked]:bg-zinc-50"
             aria-label={`Select ${city.label} location`}
           >
