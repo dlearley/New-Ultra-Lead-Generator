@@ -145,7 +145,10 @@ export function LandingPageBuilder({ initialPage, onSave, onCancel }: LandingPag
 
     const newBlocks = [...blocks];
     const swapIndex = direction === 'up' ? index - 1 : index + 1;
-    [newBlocks[index], newBlocks[swapIndex]] = [newBlocks[swapIndex], newBlocks[index]];
+    const currentBlock = newBlocks[index];
+    const swapBlock = newBlocks[swapIndex];
+    if (!currentBlock || !swapBlock) return;
+    [newBlocks[index], newBlocks[swapIndex]] = [swapBlock, currentBlock];
     setBlocks(newBlocks);
     setSelectedBlockIndex(swapIndex);
   };

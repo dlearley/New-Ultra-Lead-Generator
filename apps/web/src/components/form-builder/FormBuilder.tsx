@@ -46,13 +46,15 @@ interface FormField {
   placeholder?: string;
   required?: boolean;
   helpText?: string;
-  options?: string[];
+  options?: string[] | undefined;
   validation?: {
     min?: number;
     max?: number;
     pattern?: string;
   };
   mapping?: string;
+  min?: number;
+  max?: number;
 }
 
 interface DraggableFieldProps {
@@ -297,8 +299,8 @@ function FieldProperties({ field, updateField }: { field: FormField | null; upda
       <div className="flex items-center justify-between pt-4 border-t">
         <Label>Required Field</Label>
         <Switch
-          checked={field.required}
-          onCheckedChange={(checked) => updateField({ ...field, required: checked })}
+          checked={field.required || false}
+          onCheckedChange={(checked: boolean) => updateField({ ...field, required: checked })}
         />
       </div>
     </div>
@@ -367,7 +369,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }: FormBuilderProps)
 
   const addField = (type: string) => {
     const fieldType = FIELD_TYPES.find(f => f.type === type);
-    const newField = {
+    const newField: FormField = {
       id: generateId(),
       type,
       label: fieldType?.label || 'New Field',
@@ -394,6 +396,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }: FormBuilderProps)
 
   const moveField = useCallback((dragIndex: number, hoverIndex: number) => {
     const draggedField = fields[dragIndex];
+    if (!draggedField) return;
     const newFields = [...fields];
     newFields.splice(dragIndex, 1);
     newFields.splice(hoverIndex, 0, draggedField);
@@ -424,7 +427,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }: FormBuilderProps)
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const selectedField = selectedFieldIndex !== null ? fields[selectedFieldIndex] : null;
+  const selectedField: FormField | null = selectedFieldIndex !== null ? fields[selectedFieldIndex] || null : null;
 
   return (
     <DndProvider backend={HTML5Backend}>
