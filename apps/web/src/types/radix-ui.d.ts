@@ -19,6 +19,7 @@ declare module '@radix-ui/react-checkbox' {
     name?: string;
     value?: string;
     children?: React.ReactNode;
+    className?: string;
   }
   export const Root: React.ForwardRefExoticComponent<CheckboxProps & React.RefAttributes<HTMLButtonElement>>;
   export const Indicator: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLSpanElement> & React.RefAttributes<HTMLSpanElement>>;
@@ -111,4 +112,5 @@ declare module '@prospecting-platform/ui' {
   export const Label: any;
   export const Switch: any;
   export const Slider: any;
+  export const ResponsiveFilter: any;
 }
