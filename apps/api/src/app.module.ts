@@ -22,6 +22,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { DeliverabilityModule } from './deliverability/deliverability.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { SlackModule } from './slack/slack.module';
+import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -49,6 +50,7 @@ import { PrismaService } from './services/prisma.service';
     DeliverabilityModule,
     CalendarModule,
     SlackModule,
+    CustomFieldsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

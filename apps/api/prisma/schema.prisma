@@ -4012,3 +4012,48 @@ model SlackConnection {
 
   @@map("slack_connections")
 }
+
+// ============================================================
+// CUSTOM FIELDS MODELS
+// ============================================================
+
+model CustomField {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  apiName        String
+  type           String   // text, number, date, boolean, select, multi_select, url, email, phone
+  description    String?
+  required       Boolean  @default(false)
+  defaultValue   Json?
+  options        Json?    // Array of strings for select/multi_select
+  entityType     String   // contact, company, deal
+  order          Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  values         CustomFieldValue[]
+
+  @@unique([organizationId, apiName, entityType])
+  @@index([organizationId, entityType, isActive])
+  @@index([organizationId, order])
+  @@map("custom_fields")
+
+model CustomFieldValue {
+  id             String   @id @default(cuid())
+  organizationId String
+  fieldId        String
+  entityId       String
+  entityType     String   // contact, company, deal
+  value          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  field          CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, entityId])
+  @@index([organizationId, entityType, entityId])
+  @@index([fieldId])
+  @@map("custom_field_values")
+}
