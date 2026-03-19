@@ -121,7 +121,7 @@ function SortableFilterItem({
   };
 
   const filter = AVAILABLE_FILTERS.find((f) => f.field === condition.field);
-  const operators = filter ? OPERATORS[filter.type] : [];
+  const operators = filter ? OPERATORS[filter.type] || [] : [];
 
   return (
     <div

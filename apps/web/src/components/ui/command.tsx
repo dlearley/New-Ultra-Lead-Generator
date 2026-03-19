@@ -19,14 +19,18 @@ Command.displayName = "Command"
 
 const CommandInput = React.forwardRef<
   HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...props }, ref) => (
+  React.InputHTMLAttributes<HTMLInputElement> & { onValueChange?: (value: string) => void }
+>(({ className, onValueChange, onChange, ...props }, ref) => (
   <input
     ref={ref}
     className={cn(
       "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
       className
     )}
+    onChange={(e) => {
+      onChange?.(e);
+      onValueChange?.(e.target.value);
+    }}
     {...props}
   />
 ))
@@ -58,8 +62,8 @@ CommandEmpty.displayName = "CommandEmpty"
 
 const CommandGroup = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { heading?: string }
+>(({ className, heading, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -67,7 +71,10 @@ const CommandGroup = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    {heading && <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{heading}</div>}
+    {props.children}
+  </div>
 ))
 CommandGroup.displayName = "CommandGroup"
 
