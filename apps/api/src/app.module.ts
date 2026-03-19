@@ -20,6 +20,8 @@ import { ComplianceModule } from './compliance/compliance.module';
 import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { DeliverabilityModule } from './deliverability/deliverability.module';
+import { CalendarModule } from './calendar/calendar.module';
+import { SlackModule } from './slack/slack.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -45,6 +47,8 @@ import { PrismaService } from './services/prisma.service';
     RateLimitingModule,
     WebhooksModule,
     DeliverabilityModule,
+    CalendarModule,
+    SlackModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

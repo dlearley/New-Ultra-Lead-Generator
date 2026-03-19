@@ -3905,3 +3905,110 @@ model SuppressedEmail {
   @@index([organizationId, source])
   @@map("suppressed_emails")
 }
+
+// ============================================================
+// CALENDAR INTEGRATION MODELS
+// ============================================================
+
+model CalendarConnection {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  provider       String   // google, outlook, microsoft
+  email          String
+  accessToken    String
+  refreshToken   String?
+  expiresAt      DateTime?
+  scope          String?
+  status         String   @default("active") // active, disconnected, expired
+  isPrimary      Boolean  @default(false)
+  disconnectedAt DateTime?
+  lastRefreshedAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, userId, provider])
+  @@index([organizationId, userId, status])
+  @@map("calendar_connections")
+}
+
+model BookingLink {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  userId              String
+  name                String
+  slug                String
+  duration            Int      // minutes
+  description         String?
+  availabilityWindows Json     // Array of { dayOfWeek, startTime, endTime }
+  bufferMinutes       Int      @default(15)
+  maxAdvanceDays      Int      @default(30)
+  minAdvanceHours     Int      @default(1)
+  timezone            String   @default("America/New_York")
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id])
+  bookings            MeetingBooking[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, userId, isActive])
+  @@map("booking_links")
+}
+
+model MeetingBooking {
+  id                String   @id @default(cuid())
+  organizationId    String
+  bookingLinkId     String?
+  contactId         String
+  userId            String
+  title             String
+  description       String?
+  startTime         DateTime
+  endTime           DateTime
+  duration          Int      // minutes
+  contactEmail      String
+  contactName       String
+  status            String   @default("confirmed") // pending, confirmed, cancelled, completed
+  provider          String   // google, outlook, zoom, teams
+  meetingLink       String?
+  calendarEventId   String?
+  sequenceStepId    String?
+  cancelledAt       DateTime?
+  cancellationReason String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  bookingLink       BookingLink? @relation(fields: [bookingLinkId], references: [id])
+  contact           Contact  @relation(fields: [contactId], references: [id])
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, userId, status])
+  @@index([contactId])
+  @@index([startTime])
+  @@map("meeting_bookings")
+}
+
+// ============================================================
+// SLACK INTEGRATION MODEL
+// ============================================================
+
+model SlackConnection {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  teamId         String
+  teamName       String
+  accessToken    String
+  botToken       String?
+  webhookUrl     String?
+  channel        String?
+  channelId      String?
+  installedBy    String
+  status         String   @default("active") // active, disconnected
+  disconnectedAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("slack_connections")
+}
