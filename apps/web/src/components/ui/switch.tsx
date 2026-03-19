@@ -16,11 +16,10 @@ const switchVariants = cva(
   }
 )
 
-export interface SwitchProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof switchVariants> {
+export interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
+  variant?: "default" | null;
 }
 
 const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(

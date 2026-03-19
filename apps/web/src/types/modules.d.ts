@@ -25,14 +25,33 @@ declare module 'zustand' {
     subscribe: (listener: (state: T) => void) => () => void;
   }
   
+  type SetStateInternal<T> = {
+    _: (
+      partial: T | Partial<T> | ((state: T) => T | Partial<T>),
+      replace?: boolean
+    ) => void;
+  }['_'];
+  
+  export interface StoreImpl<T> {
+    (): T;
+    getState: () => T;
+    setState: SetStateInternal<T>;
+    subscribe: (listener: (state: T) => void) => () => void;
+  }
+  
   export function create<T>(
-    fn: (set: (fn: (state: T) => T | Partial<T>) => void, get: () => T) => T
-  ): StoreApi<T>;
+    fn: (set: SetStateInternal<T>, get: () => T) => T
+  ): StoreImpl<T>;
 }
 
 declare module 'jose' {
-  export function sign(payload: any, secret: Uint8Array | string): Promise<string>;
-  export function verify(token: string, secret: Uint8Array | string): Promise<any>;
+  export class SignJWT {
+    constructor(payload: any);
+    setProtectedHeader(header: any): this;
+    setIssuedAt(): this;
+    setExpirationTime(time: string | number): this;
+    sign(secret: Uint8Array | string): Promise<string>;
+  }
   export function jwtVerify(token: string, secret: Uint8Array | string): Promise<{ payload: any }>;
 }
 
@@ -42,7 +61,10 @@ declare module 'speakeasy' {
 }
 
 declare module 'leaflet' {
-  export * from 'leaflet';
+  export function map(element: string | HTMLElement, options?: any): any;
+  export function tileLayer(url: string, options?: any): any;
+  export function marker(latlng: [number, number], options?: any): any;
+  export const L: any;
 }
 
 declare module '@prisma/client' {
@@ -50,6 +72,10 @@ declare module '@prisma/client' {
     constructor();
     $connect(): Promise<void>;
     $disconnect(): Promise<void>;
+    user: any;
+    account: any;
+    session: any;
+    verificationToken: any;
   }
 }
 
