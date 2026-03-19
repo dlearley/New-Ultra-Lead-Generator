@@ -4078,3 +4078,27 @@ model ZapierConnection {
   @@index([organizationId, isActive])
   @@map("zapier_connections")
 }
+
+// ============================================================
+// QUEUE/JOB PROCESSING MODELS
+// ============================================================
+
+model JobLog {
+  id             String   @id @default(cuid())
+  jobId          String   @unique
+  organizationId String
+  queueName      String
+  jobType        String
+  status         String   @default("pending") // pending, processing, completed, failed
+  data           Json?
+  result         Json?
+  error          String?
+  processedAt    DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@map("job_logs")
+}

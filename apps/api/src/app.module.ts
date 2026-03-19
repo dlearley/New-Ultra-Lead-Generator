@@ -25,6 +25,8 @@ import { SlackModule } from './slack/slack.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { AnalyticsDashboardModule } from './analytics-dashboard/analytics-dashboard.module';
 import { ZapierModule } from './zapier/zapier.module';
+import { QueueModule } from './queue/queue.module';
+import { PredictiveModule } from './predictive/predictive.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -55,6 +57,8 @@ import { PrismaService } from './services/prisma.service';
     CustomFieldsModule,
     AnalyticsDashboardModule,
     ZapierModule,
+    QueueModule,
+    PredictiveModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
