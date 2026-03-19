@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -25,6 +26,24 @@ import {
   List,
   MousePointer
 } from 'lucide-react';
+
+// Type Definitions
+interface LandingBlock {
+  id: string;
+  type: string;
+  content?: Record<string, any>;
+}
+
+interface LandingPageBuilderProps {
+  initialPage?: {
+    name?: string;
+    title?: string;
+    description?: string;
+    blocks?: LandingBlock[];
+  };
+  onSave: (page: any) => void;
+  onCancel: () => void;
+}
 
 // Block Types for Landing Pages
 const BLOCK_TYPES = [
@@ -77,7 +96,7 @@ const LANDING_TEMPLATES = [
   },
 ];
 
-export function LandingPageBuilder({ initialPage, onSave, onCancel }) {
+export function LandingPageBuilder({ initialPage, onSave, onCancel }: LandingPageBuilderProps) {
   const [pageName, setPageName] = useState(initialPage?.name || 'New Landing Page');
   const [pageTitle, setPageTitle] = useState(initialPage?.title || '');
   const [pageDescription, setPageDescription] = useState(initialPage?.description || '');
@@ -219,19 +238,19 @@ export function LandingPageBuilder({ initialPage, onSave, onCancel }) {
             <div className="w-64 bg-white border-r p-4 overflow-y-auto">
               <h3 className="font-semibold mb-4">Add Blocks</h3>
               <div className="space-y-2">
-                {BLOCK_TYPES.map((block) => {
-                  const Icon = block.icon;
+                {BLOCK_TYPES.map((blockType) => {
+                  const IconComponent = blockType.icon as React.FC<React.SVGProps<SVGSVGElement>>;
                   return (
                     <Button
-                      key={block.type}
+                      key={blockType.type}
                       variant="ghost"
                       className="w-full justify-start text-left"
-                      onClick={() => addBlock(block.type)}
+                      onClick={() => addBlock(blockType.type)}
                     >
-                      <Icon className="h-4 w-4 mr-3 text-gray-500" />
+                      <IconComponent className="h-4 w-4 mr-3 text-gray-500" />
                       <div>
-                        <div className="font-medium">{block.label}</div>
-                        <div className="text-xs text-gray-500">{block.description}</div>
+                        <div className="font-medium">{blockType.label}</div>
+                        <div className="text-xs text-gray-500">{blockType.description}</div>
                       </div>
                     </Button>
                   );
@@ -251,7 +270,7 @@ export function LandingPageBuilder({ initialPage, onSave, onCancel }) {
                         <p>Click a block type from the sidebar</p>
                       </div>
                     ) : (
-                      blocks.map((block, index) => (
+                      blocks.map((block: LandingBlock, index: number) => (
                         <div
                           key={block.id}
                           className={`relative border-b p-6 transition-all ${
@@ -342,7 +361,7 @@ export function LandingPageBuilder({ initialPage, onSave, onCancel }) {
         ) : (
           <div className="flex-1 overflow-y-auto bg-white">
             <div className={`mx-auto ${devicePreview === 'mobile' ? 'max-w-sm' : 'max-w-4xl'}`}>
-              {blocks.map((block) => (
+              {blocks.map((block: LandingBlock) => (
                 <BlockRender key={block.id} block={block} />
               ))}
             </div>

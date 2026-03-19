@@ -37,6 +37,45 @@ import {
   Star
 } from 'lucide-react';
 
+// Type Definitions
+interface FormField {
+  id: string;
+  type: string;
+  label: string;
+  name?: string;
+  placeholder?: string;
+  required?: boolean;
+  helpText?: string;
+  options?: string[];
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+  };
+  mapping?: string;
+}
+
+interface DraggableFieldProps {
+  field: FormField;
+  index: number;
+  moveField: (dragIndex: number, hoverIndex: number) => void;
+  updateField: (index: number, field: FormField) => void;
+  removeField: (index: number) => void;
+  isSelected: boolean;
+  onSelect: (index: number) => void;
+}
+
+interface FormBuilderProps {
+  initialForm?: {
+    name?: string;
+    title?: string;
+    description?: string;
+    fields?: FormField[];
+  };
+  onSave: (form: any) => void;
+  onCancel: () => void;
+}
+
 // Field Types
 const FIELD_TYPES = [
   { type: 'text', label: 'Text Input', icon: Type, description: 'Single line text' },
@@ -54,7 +93,7 @@ const FIELD_TYPES = [
 ];
 
 // Draggable Field Component
-function DraggableField({ field, index, moveField, updateField, removeField, isSelected, onSelect }) {
+function DraggableField({ field, index, moveField, updateField, removeField, isSelected, onSelect }: DraggableFieldProps) {
   const [{ isDragging }, drag] = useDrag({
     type: 'field',
     item: { index },
@@ -65,7 +104,7 @@ function DraggableField({ field, index, moveField, updateField, removeField, isS
 
   const [, drop] = useDrop({
     accept: 'field',
-    hover: (item) => {
+    hover: (item: { index: number }) => {
       if (item.index !== index) {
         moveField(item.index, index);
         item.index = index;
@@ -116,7 +155,7 @@ function DraggableField({ field, index, moveField, updateField, removeField, isS
             )}
             {field.type === 'radio' && (
               <div className="space-y-2">
-                {field.options?.map((option, i) => (
+                {field.options?.map((option: string, i: number) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded-full border border-gray-300" />
                     <span className="text-sm text-gray-600">{option}</span>
@@ -126,7 +165,7 @@ function DraggableField({ field, index, moveField, updateField, removeField, isS
             )}
             {field.type === 'checkbox' && (
               <div className="space-y-2">
-                {field.options?.map((option, i) => (
+                {field.options?.map((option: string, i: number) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded border border-gray-300" />
                     <span className="text-sm text-gray-600">{option}</span>
@@ -173,7 +212,7 @@ function DraggableField({ field, index, moveField, updateField, removeField, isS
 }
 
 // Field Properties Panel
-function FieldProperties({ field, updateField }) {
+function FieldProperties({ field, updateField }: { field: FormField | null; updateField: (field: FormField) => void }) {
   if (!field) {
     return (
       <div className="text-center text-gray-500 py-8">
@@ -315,7 +354,7 @@ const FORM_TEMPLATES = [
 ];
 
 // Main Form Builder Component
-export function FormBuilder({ initialForm, onSave, onCancel }) {
+export function FormBuilder({ initialForm, onSave, onCancel }: FormBuilderProps) {
   const [formName, setFormName] = useState(initialForm?.name || 'New Form');
   const [formDescription, setFormDescription] = useState(initialForm?.description || '');
   const [fields, setFields] = useState(initialForm?.fields || []);
@@ -461,19 +500,19 @@ export function FormBuilder({ initialForm, onSave, onCancel }) {
               <div className="w-64 bg-white border-r p-4 overflow-y-auto">
                 <h3 className="font-semibold mb-4">Field Library</h3>
                 <div className="space-y-2">
-                  {FIELD_TYPES.map((field) => {
-                    const Icon = field.icon;
+                  {FIELD_TYPES.map((fieldType) => {
+                    const IconComponent = fieldType.icon as React.FC<React.SVGProps<SVGSVGElement>>;
                     return (
                       <Button
-                        key={field.type}
+                        key={fieldType.type}
                         variant="ghost"
                         className="w-full justify-start text-left"
-                        onClick={() => addField(field.type)}
+                        onClick={() => addField(fieldType.type)}
                       >
-                        <Icon className="h-4 w-4 mr-3 text-gray-500" />
+                        <IconComponent className="h-4 w-4 mr-3 text-gray-500" />
                         <div>
-                          <div className="font-medium">{field.label}</div>
-                          <div className="text-xs text-gray-500">{field.description}</div>
+                          <div className="font-medium">{fieldType.label}</div>
+                          <div className="text-xs text-gray-500">{fieldType.description}</div>
                         </div>
                       </Button>
                     );
@@ -498,7 +537,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }) {
                           <p>Click a field type from the sidebar to add it to your form</p>
                         </div>
                       ) : (
-                        fields.map((field, index) => (
+                        fields.map((field: FormField, index: number) => (
                           <DraggableField
                             key={field.id}
                             field={field}
@@ -577,7 +616,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }) {
                     )}
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {fields.map((field) => (
+                    {fields.map((field: FormField) => (
                       <div key={field.id}>
                         <Label className={field.required ? 'after:content-["*"] after:text-red-500 after:ml-1' : ''}>
                           {field.label}
@@ -604,7 +643,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }) {
                               <SelectValue placeholder={field.placeholder || 'Select...'} />
                             </SelectTrigger>
                             <SelectContent>
-                              {field.options?.map((opt, i) => (
+                              {field.options?.map((opt: string, i: number) => (
                                 <SelectItem key={i} value={opt}>{opt}</SelectItem>
                               ))}
                             </SelectContent>
@@ -612,7 +651,7 @@ export function FormBuilder({ initialForm, onSave, onCancel }) {
                         )}
                         {field.type === 'radio' && (
                           <div className="space-y-2 mt-2">
-                            {field.options?.map((opt, i) => (
+                            {field.options?.map((opt: string, i: number) => (
                               <div key={i} className="flex items-center gap-2">
                                 <input type="radio" name={field.name} value={opt} className="h-4 w-4" />
                                 <Label className="font-normal">{opt}</Label>
