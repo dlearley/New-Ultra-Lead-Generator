@@ -8,6 +8,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   concurrentRequest: any;
   webhook: any;
   webhookDelivery: any;
+  sentEmail: any;
+  emailEvent: any;
+  suppressedEmail: any;
 
   async onModuleInit() {
     await this.$connect();

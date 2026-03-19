@@ -3845,3 +3845,63 @@ model WebhookDelivery {
   @@index([status, nextRetryAt])
   @@map("webhook_deliveries")
 }
+
+// ============================================================
+// EMAIL DELIVERABILITY MODELS
+// ============================================================
+
+model SentEmail {
+  id             String   @id @default(cuid())
+  organizationId String
+  contactId      String
+  sequenceId     String?
+  stepId         String?
+  subject        String
+  body           String   @db.Text
+  fromEmail      String
+  sentAt         DateTime @default(now())
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  openCount      Int      @default(0)
+  lastOpenedAt   DateTime?
+  clickCount     Int      @default(0)
+  lastClickedAt  DateTime?
+  bouncedAt      DateTime?
+  complainedAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, sentAt])
+  @@index([contactId])
+  @@map("sent_emails")
+}
+
+model EmailEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  emailId        String
+  contactId      String
+  event          String   // sent, delivered, opened, clicked, bounced, complained, unsubscribed
+  timestamp      DateTime @default(now())
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, event, timestamp])
+  @@index([emailId])
+  @@index([contactId])
+  @@map("email_events")
+}
+
+model SuppressedEmail {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  reason         String
+  source         String   // bounce, complaint, unsubscribe, manual
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, email])
+  @@index([organizationId, source])
+  @@map("suppressed_emails")
+}

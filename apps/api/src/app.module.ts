@@ -19,6 +19,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { DeliverabilityModule } from './deliverability/deliverability.module';
 import { PrismaService } from './services/prisma.service';
 
 @Module({
@@ -43,6 +44,7 @@ import { PrismaService } from './services/prisma.service';
     ComplianceModule,
     RateLimitingModule,
     WebhooksModule,
+    DeliverabilityModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
