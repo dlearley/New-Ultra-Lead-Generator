@@ -71,13 +71,23 @@ declare module '@radix-ui/react-dialog' {
 declare module '@radix-ui/react-dropdown-menu' {
   import * as React from 'react';
   
+  export interface CheckboxItemProps {
+    checked?: boolean | undefined;
+    defaultChecked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+    disabled?: boolean;
+    children?: React.ReactNode;
+    className?: string;
+  }
+  
   export const Root: React.FC<{ children?: React.ReactNode }>;
   export const Trigger: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLButtonElement> & { asChild?: boolean } & React.RefAttributes<HTMLButtonElement>>;
   export const Portal: React.FC<{ children?: React.ReactNode }>;
   export const Content: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & { align?: string; sideOffset?: number } & React.RefAttributes<HTMLDivElement>>;
   export const Item: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & React.RefAttributes<HTMLDivElement>>;
-  export const CheckboxItem: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & { checked?: boolean } & React.RefAttributes<HTMLDivElement>>;
+  export const CheckboxItem: React.ForwardRefExoticComponent<CheckboxItemProps & React.RefAttributes<HTMLDivElement>>;
   export const RadioItem: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & { value: string } & React.RefAttributes<HTMLDivElement>>;
+  export const ItemIndicator: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLSpanElement> & React.RefAttributes<HTMLSpanElement>>;
   export const Label: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & React.RefAttributes<HTMLDivElement>>;
   export const Separator: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & React.RefAttributes<HTMLDivElement>>;
   export const Sub: React.FC<{ children?: React.ReactNode }>;
