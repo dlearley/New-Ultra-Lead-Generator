@@ -82,8 +82,8 @@ export function ListDetailsDrawer({ list, isOpen, onClose }: ListDetailsDrawerPr
           ownership: "Private" as const,
           businessType: "B2B" as const,
           location: {
-            city: ["New York", "San Francisco", "Chicago", "Austin"][i % 4],
-            state: ["NY", "CA", "IL", "TX"][i % 4],
+            city: ["New York", "San Francisco", "Chicago", "Austin"][i % 4] || "New York",
+            state: ["NY", "CA", "IL", "TX"][i % 4] || "NY",
             country: "USA",
             lat: 40.7128 + (i * 0.1),
             lng: -74.0060 + (i * 0.1)

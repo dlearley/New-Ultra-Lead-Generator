@@ -1,7 +1,9 @@
 declare module '@radix-ui/react-label' {
   import * as React from 'react';
   
-  export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
+  export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+    children?: React.ReactNode;
+  }
   export const Root: React.ForwardRefExoticComponent<LabelProps & React.RefAttributes<HTMLLabelElement>>;
 }
 
@@ -16,6 +18,7 @@ declare module '@radix-ui/react-checkbox' {
     required?: boolean;
     name?: string;
     value?: string;
+    children?: React.ReactNode;
   }
   export const Root: React.ForwardRefExoticComponent<CheckboxProps & React.RefAttributes<HTMLButtonElement>>;
   export const Indicator: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLSpanElement> & React.RefAttributes<HTMLSpanElement>>;
@@ -32,6 +35,7 @@ declare module '@radix-ui/react-switch' {
     required?: boolean;
     name?: string;
     value?: string;
+    children?: React.ReactNode;
   }
   export const Root: React.ForwardRefExoticComponent<SwitchProps & React.RefAttributes<HTMLButtonElement>>;
   export const Thumb: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLSpanElement> & React.RefAttributes<HTMLSpanElement>>;
@@ -47,7 +51,6 @@ declare module '@radix-ui/react-icons' {
   export const MagnifyingGlassIcon: React.FC<React.SVGProps<SVGSVGElement>>;
 }
 
-
 declare module '@radix-ui/react-slider' {
   import * as React from 'react';
   
@@ -60,6 +63,7 @@ declare module '@radix-ui/react-slider' {
     step?: number;
     disabled?: boolean;
     orientation?: 'horizontal' | 'vertical';
+    children?: React.ReactNode;
   }
   
   export const Root: React.ForwardRefExoticComponent<SliderProps & React.RefAttributes<HTMLDivElement>>;
@@ -75,7 +79,9 @@ declare module '@radix-ui/react-accordion' {
     type?: 'single' | 'multiple';
     collapsible?: boolean;
     value?: string;
+    defaultValue?: string | string[];
     onValueChange?: (value: string) => void;
+    children?: React.ReactNode;
   }
   
   export const Root: React.ForwardRefExoticComponent<AccordionProps & React.RefAttributes<HTMLDivElement>>;
@@ -90,9 +96,19 @@ declare module '@radix-ui/react-popover' {
   export interface PopoverProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    children?: React.ReactNode;
   }
   
   export const Root: React.FC<PopoverProps>;
-  export const Trigger: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLButtonElement> & React.RefAttributes<HTMLButtonElement>>;
-  export const Content: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & React.RefAttributes<HTMLDivElement>>;
+  export const Trigger: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLButtonElement> & { asChild?: boolean } & React.RefAttributes<HTMLButtonElement>>;
+  export const Content: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & { align?: string; sideOffset?: number } & React.RefAttributes<HTMLDivElement>>;
+  export const Portal: React.FC<{ children?: React.ReactNode }>;
+}
+
+// @prospecting-platform/ui - stub for missing module
+declare module '@prospecting-platform/ui' {
+  export const Checkbox: any;
+  export const Label: any;
+  export const Switch: any;
+  export const Slider: any;
 }
